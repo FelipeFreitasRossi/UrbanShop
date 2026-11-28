@@ -1,17 +1,18 @@
 import { Link } from 'expo-router';
 import { Check, CircleCheck } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View, type TextStyle } from 'react-native';
+import { Pressable, TextInput, View, type TextStyle } from 'react-native';
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { useBreakpoint } from '../../hooks/useBreakpoint';
 import { Reveal } from '../../motion/Reveal';
 import { friendlyError, ApiError } from '../../services/api';
 import { EMAIL_REGEX, subscribeNewsletter } from '../../services/newsletter';
-import { colors, fonts, radius, spacing } from '../../theme/tokens';
+import { fonts, radius, spacing } from '../../theme/tokens';
 import { Container } from '../layout/Container';
 import { Section } from '../layout/Section';
 import { Button } from '../ui/Button';
 import { UText } from '../ui/UText';
+import { makeStyles, useColors } from '../../theme/ThemeProvider';
 
 type Status = 'idle' | 'sending' | 'done';
 
@@ -20,6 +21,8 @@ const webInputReset = { outlineStyle: 'none' } as unknown as TextStyle;
 
 /** Cadastro na newsletter com validação, consentimento (LGPD) e envio para a API. */
 export function Newsletter() {
+  const colors = useColors();
+  const styles = useStyles();
   const { isMobile } = useBreakpoint();
   const [email, setEmail] = useState('');
   const [consent, setConsent] = useState(false);
@@ -53,7 +56,9 @@ export function Newsletter() {
   };
 
   const inputBorder = useAnimatedStyle(() => ({
-    borderColor: withTiming(error ? colors.danger : focused ? colors.gold : colors.lineStrong, { duration: 200 }),
+    borderColor: withTiming(error ? colors.danger : focused ? colors.gold : colors.lineStrong, {
+      duration: 200,
+    }),
   }));
 
   return (
@@ -72,8 +77,8 @@ export function Newsletter() {
           </Reveal>
           <Reveal delay={160}>
             <UText variant="body" align="center" style={styles.lead}>
-              Lançamentos, acessos antecipados e ofertas exclusivas no seu e-mail. Sem excesso: só o
-              que vale a pena.
+              Lançamentos, acessos antecipados e ofertas exclusivas no seu e-mail. Sem excesso: só o que vale
+              a pena.
             </UText>
           </Reveal>
 
@@ -120,7 +125,12 @@ export function Newsletter() {
                 <ConsentCheckbox checked={consent} onChange={setConsent} />
 
                 {error ? (
-                  <UText variant="small" color={colors.danger} align="center" accessibilityLiveRegion="polite">
+                  <UText
+                    variant="small"
+                    color={colors.danger}
+                    align="center"
+                    accessibilityLiveRegion="polite"
+                  >
                     {error}
                   </UText>
                 ) : null}
@@ -134,6 +144,8 @@ export function Newsletter() {
 }
 
 function ConsentCheckbox({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+  const colors = useColors();
+  const styles = useStyles();
   const box = useAnimatedStyle(() => ({
     backgroundColor: withTiming(checked ? colors.gold : 'rgba(0,0,0,0)', { duration: 180 }),
     borderColor: withTiming(checked ? colors.gold : colors.lineStrong, { duration: 180 }),
@@ -153,8 +165,8 @@ function ConsentCheckbox({ checked, onChange }: { checked: boolean; onChange: (v
         </Animated.View>
       </Pressable>
       <UText variant="small" style={styles.consentText}>
-        Autorizo a UrbanShop a enviar novidades e ofertas para este e-mail. Posso cancelar quando
-        quiser. Saiba mais na{' '}
+        Autorizo a UrbanShop a enviar novidades e ofertas para este e-mail. Posso cancelar quando quiser.
+        Saiba mais na{' '}
         <Link href="/institucional/privacidade" style={styles.consentLink}>
           Política de privacidade
         </Link>
@@ -164,7 +176,7 @@ function ConsentCheckbox({ checked, onChange }: { checked: boolean; onChange: (v
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   box: { maxWidth: 640, width: '100%', alignSelf: 'center', alignItems: 'center' },
   title: { marginTop: spacing.md },
   lead: { marginTop: spacing.sm, maxWidth: 520 },
@@ -208,4 +220,4 @@ const styles = StyleSheet.create({
     borderColor: colors.line,
     borderRadius: radius.pill,
   },
-});
+}));

@@ -4,7 +4,9 @@ import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { interpolate, interpolateColor, useAnimatedStyle } from 'react-native-reanimated';
 import { useInteraction } from '../../motion/useInteraction';
-import { colors, fonts, radius } from '../../theme/tokens';
+import { fonts, radius } from '../../theme/tokens';
+import { makeStyles, useColors } from '../../theme/ThemeProvider';
+import type { Palette } from '../../theme/palettes';
 
 type Variant = 'primary' | 'outline' | 'ghost' | 'gold';
 type Size = 'md' | 'lg';
@@ -24,7 +26,10 @@ type ButtonProps = {
   accessibilityHint?: string;
 };
 
-const palette: Record<Variant, { bg: [string, string]; fg: [string, string]; border: [string, string] }> = {
+type Pair = [string, string];
+
+/** Cores [normal, hover] de cada variante, a partir do tema atual. */
+const buttonPalette = (colors: Palette): Record<Variant, { bg: Pair; fg: Pair; border: Pair }> => ({
   primary: {
     bg: [colors.white, colors.gold],
     fg: [colors.black, colors.black],
@@ -36,7 +41,7 @@ const palette: Record<Variant, { bg: [string, string]; fg: [string, string]; bor
     border: [colors.gold, colors.goldLight],
   },
   outline: {
-    bg: ['rgba(255,255,255,0)', colors.white],
+    bg: ['rgba(128,128,128,0)', colors.white],
     fg: [colors.white, colors.black],
     border: [colors.lineStrong, colors.white],
   },
@@ -45,7 +50,7 @@ const palette: Record<Variant, { bg: [string, string]; fg: [string, string]; bor
     fg: [colors.text, colors.gold],
     border: ['rgba(0,0,0,0)', 'rgba(0,0,0,0)'],
   },
-};
+});
 
 /** Botão com microinterações: troca de cor no hover, escala ao pressionar e seta animada. */
 export function Button({
@@ -61,8 +66,10 @@ export function Button({
   style,
   accessibilityHint,
 }: ButtonProps) {
+  const colors = useColors();
+  const styles = useStyles();
   const { hover, pressStyle, handlers } = useInteraction();
-  const p = palette[variant];
+  const p = buttonPalette(colors)[variant];
   const isGhost = variant === 'ghost';
 
   const containerStyle = useAnimatedStyle(() => ({
@@ -126,7 +133,7 @@ export function Button({
   return pressable;
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(() => ({
   base: {
     borderWidth: 1,
     borderRadius: radius.pill,
@@ -146,4 +153,4 @@ const styles = StyleSheet.create({
   labelLg: { fontSize: 13.5, letterSpacing: 1.8 },
   disabled: { opacity: 0.45 },
   fullWidth: { alignSelf: 'stretch' },
-});
+}));

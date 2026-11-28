@@ -9,8 +9,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { easeInOut, easeOutExpo } from '../../motion/easing';
-import { colors } from '../../theme/tokens';
 import { Logo } from './Logo';
+import { makeStyles } from '../../theme/ThemeProvider';
 
 type SplashOverlayProps = {
   /** true quando fontes e recursos essenciais terminaram de carregar. */
@@ -26,6 +26,7 @@ const LINE_WIDTH = 180;
  * Quando tudo está pronto, a linha se completa e a tela sai com fade.
  */
 export function SplashOverlay({ ready, onFinish }: SplashOverlayProps) {
+  const styles = useStyles();
   const reduce = useReducedMotion();
   const logo = useSharedValue(0);
   const line = useSharedValue(0);
@@ -35,23 +36,24 @@ export function SplashOverlay({ ready, onFinish }: SplashOverlayProps) {
   const onFinishRef = useRef(onFinish);
   onFinishRef.current = onFinish;
 
-  // Entrada da logo e avanço da linha enquanto carrega.
+  // A linha dourada avança enquanto as fontes carregam.
   useEffect(() => {
-    logo.set(withTiming(1, { duration: reduce ? 0 : 700, easing: easeOutExpo }));
     line.set(withTiming(0.75, { duration: reduce ? 0 : 1600, easing: easeOutExpo }));
-  }, [logo, line, reduce]);
+  }, [line, reduce]);
 
   // Saída assim que estiver pronto.
   useEffect(() => {
     if (!ready || finishing.current) return;
     finishing.current = true;
-    const delay = reduce ? 0 : 300;
+    // A logo entra assim que a fonte da marca está disponível (nunca aparece cortada).
+    logo.set(withTiming(1, { duration: reduce ? 0 : 600, easing: easeOutExpo }));
+    const delay = reduce ? 0 : 750;
     const duration = reduce ? 120 : 520;
     line.set(withTiming(1, { duration: reduce ? 0 : 280, easing: easeInOut }));
     exit.set(withDelay(delay, withTiming(1, { duration, easing: easeInOut })));
     // Remove a camada quando a animação de saída termina.
     timer.current = setTimeout(() => onFinishRef.current(), delay + duration + 40);
-  }, [ready, reduce, line, exit]);
+  }, [ready, reduce, line, exit, logo]);
 
   useEffect(
     () => () => {
@@ -72,9 +74,12 @@ export function SplashOverlay({ ready, onFinish }: SplashOverlayProps) {
   const lineStyle = useAnimatedStyle(() => ({ width: line.value * LINE_WIDTH }));
 
   return (
-    <Animated.View style={[StyleSheet.absoluteFill, styles.root, container]} accessibilityLabel="Carregando UrbanShop">
+    <Animated.View
+      style={[StyleSheet.absoluteFill, styles.root, container]}
+      accessibilityLabel="Carregando UrbanShop"
+    >
       <Animated.View style={logoStyle}>
-        <Logo size={34} />
+        {ready ? <Logo size={34} /> : <View style={styles.logoSpace} />}
       </Animated.View>
       <View style={styles.track}>
         <Animated.View style={[styles.line, lineStyle]} />
@@ -83,7 +88,7 @@ export function SplashOverlay({ ready, onFinish }: SplashOverlayProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   root: {
     backgroundColor: colors.black,
     alignItems: 'center',
@@ -98,4 +103,5 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   line: { height: 1, backgroundColor: colors.gold },
-});
+  logoSpace: { height: 43 },
+}));

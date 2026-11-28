@@ -1,7 +1,8 @@
-import React, { useCallback, useEffect, useRef } from 'react';
-import { Dimensions, View, type StyleProp, type ViewStyle } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, {
   interpolate,
+  useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
@@ -10,6 +11,7 @@ import Animated, {
 import { durations } from '../theme/tokens';
 import { easeOutExpo } from './easing';
 import { usePageScroll } from './PageScroll';
+import { useContentPosition } from './useContentPosition';
 
 export type RevealVariant = 'fade' | 'up' | 'down' | 'left' | 'right' | 'zoom';
 
@@ -28,6 +30,7 @@ type RevealProps = {
 
 /**
  * Reveal on Scroll: o conteúdo aparece quando entra na área visível.
+ * A verificação roda na UI thread (sem custo de JavaScript durante a rolagem).
  * Respeita "reduzir movimento" (aparece direto, sem deslocamento).
  */
 export function Reveal({
@@ -35,50 +38,42 @@ export function Reveal({
   variant = 'up',
   delay = 0,
   duration = durations.reveal,
-  distance = 32,
-  threshold = 0.9,
+  distance = 28,
+  threshold = 0.92,
   style,
 }: RevealProps) {
-  const { subscribe, reduceMotion, active } = usePageScroll();
+  const { scrollY, viewportH, reduceMotion, active } = usePageScroll();
   const skip = reduceMotion || !active;
-
-  const ref = useRef<View>(null);
-  const revealed = useRef(skip);
+  const { ref, top, measure } = useContentPosition(!skip);
   const shown = useSharedValue(skip ? 1 : 0);
-  const unsubscribe = useRef<() => void>(() => {});
+  const done = useSharedValue(skip ? 1 : 0);
 
-  const check = useCallback(() => {
-    if (revealed.current) return;
-    const node = ref.current;
-    if (!node) return;
-    node.measureInWindow((_x, y, w, h) => {
-      if (revealed.current) return;
-      if (w === 0 && h === 0) return; // ainda não posicionado
-      const vh = Dimensions.get('window').height;
-      if (y < vh * threshold && y + h > 0) {
-        revealed.current = true;
-        unsubscribe.current();
+  useAnimatedReaction(
+    () => top.value >= 0 && viewportH.value > 0 && scrollY.value + viewportH.value * threshold > top.value,
+    (visible) => {
+      if (visible && done.get() === 0) {
+        done.set(1);
         shown.set(withDelay(delay, withTiming(1, { duration, easing: easeOutExpo })));
       }
-    });
-  }, [delay, duration, threshold, shown]);
+    },
+  );
 
+  // Segurança: se a medição falhar, o conteúdo aparece mesmo assim.
   useEffect(() => {
-    if (revealed.current) return;
-    unsubscribe.current = subscribe(check);
-    const t = setTimeout(check, 60);
-    return () => {
-      clearTimeout(t);
-      unsubscribe.current();
-    };
-  }, [subscribe, check]);
+    if (skip) return;
+    const t = setTimeout(() => {
+      if (top.get() < 0 && done.get() === 0) {
+        done.set(1);
+        shown.set(withTiming(1, { duration: 300 }));
+      }
+    }, 2500);
+    return () => clearTimeout(t);
+  }, [skip, top, done, shown]);
 
   const animatedStyle = useAnimatedStyle(() => {
     const p = shown.value;
-    const d = interpolate(p, [0, 1], [distance, 0]);
+    const d = (1 - p) * distance;
     switch (variant) {
-      case 'fade':
-        return { opacity: p };
       case 'up':
         return { opacity: p, transform: [{ translateY: d }] };
       case 'down':
@@ -94,8 +89,12 @@ export function Reveal({
     }
   });
 
+  if (skip) {
+    return <View style={style}>{children}</View>;
+  }
+
   return (
-    <View ref={ref} collapsable={false} onLayout={check} style={style}>
+    <View ref={ref} collapsable={false} onLayout={measure} style={style}>
       <Animated.View style={animatedStyle}>{children}</Animated.View>
     </View>
   );

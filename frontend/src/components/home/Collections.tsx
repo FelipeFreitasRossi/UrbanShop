@@ -4,27 +4,29 @@ import { ArrowUpRight } from 'lucide-react-native';
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { interpolate, useAnimatedStyle } from 'react-native-reanimated';
-import { media } from '../../config/media';
+import { media, sized } from '../../config/media';
 import { useBreakpoint } from '../../hooks/useBreakpoint';
 import { ParallaxImage } from '../../motion/ParallaxImage';
 import { Reveal } from '../../motion/Reveal';
 import { useInteraction } from '../../motion/useInteraction';
-import { colors, radius, spacing } from '../../theme/tokens';
+import { radius, spacing } from '../../theme/tokens';
 import { Container } from '../layout/Container';
 import { Section } from '../layout/Section';
 import { Button } from '../ui/Button';
 import { UText } from '../ui/UText';
+import { OnDark, makeStyles, useColors } from '../../theme/ThemeProvider';
 
 /** Coleções editoriais com fotos grandes, parallax e textos que surgem com a rolagem. */
 export function Collections() {
+  const styles = useStyles();
   const { pick, isMobile } = useBreakpoint();
 
   return (
     <>
-      {/* Coleção masculina — imagem de borda a borda */}
-      <View>
+      {/* Coleção masculina — imagem de borda a borda (sempre escura, texto sobre foto) */}
+      <OnDark>
         <ParallaxImage
-          uri={media.collections.masculino}
+          uri={sized(media.collections.masculino, pick(900, 1400, 2000))}
           strength={pick(50, 70, 90)}
           zoom={0.1}
           style={{ height: pick(560, 680, 800) }}
@@ -60,7 +62,7 @@ export function Collections() {
             </Container>
           </View>
         </ParallaxImage>
-      </View>
+      </OnDark>
 
       {/* Duas coleções lado a lado */}
       <Section>
@@ -91,15 +93,7 @@ export function Collections() {
   );
 }
 
-function CollectionTile({
-  eyebrow,
-  title,
-  href,
-  image,
-  alt,
-  delay,
-  offset,
-}: {
+type CollectionTileProps = {
   eyebrow: string;
   title: string;
   href: Href;
@@ -107,7 +101,20 @@ function CollectionTile({
   alt: string;
   delay: number;
   offset: number;
-}) {
+};
+
+/** O card fica sempre escuro (texto claro sobre foto), em qualquer tema. */
+function CollectionTile(props: CollectionTileProps) {
+  return (
+    <OnDark>
+      <CollectionTileContent {...props} />
+    </OnDark>
+  );
+}
+
+function CollectionTileContent({ eyebrow, title, href, image, alt, delay, offset }: CollectionTileProps) {
+  const colors = useColors();
+  const styles = useStyles();
   const { hover, pressStyle, handlers } = useInteraction(0.99);
   const { isMobile } = useBreakpoint();
   const icon = useAnimatedStyle(() => ({
@@ -156,7 +163,7 @@ function CollectionTile({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   fullOverlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'flex-end',
@@ -186,4 +193,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-});
+}));

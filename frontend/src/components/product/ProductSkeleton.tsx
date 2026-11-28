@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useReducedMotion,
@@ -7,10 +7,12 @@ import Animated, {
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
-import { colors, radius, spacing } from '../../theme/tokens';
+import { radius, spacing } from '../../theme/tokens';
+import { makeStyles } from '../../theme/ThemeProvider';
 
 /** Card "esqueleto" pulsante exibido enquanto os produtos carregam. */
 export function ProductSkeleton({ style }: { style?: StyleProp<ViewStyle> }) {
+  const styles = useStyles();
   const reduce = useReducedMotion();
   const pulse = useSharedValue(0.5);
 
@@ -30,7 +32,7 @@ export function ProductSkeleton({ style }: { style?: StyleProp<ViewStyle> }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   media: { aspectRatio: 4 / 5, borderRadius: radius.md, backgroundColor: colors.surfaceRaised },
   line: { height: 10, borderRadius: 5, backgroundColor: colors.surfaceRaised, marginTop: 8 },
-});
+}));

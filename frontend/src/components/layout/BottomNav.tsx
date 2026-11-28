@@ -1,20 +1,21 @@
-import { BlurView } from 'expo-blur';
 import { Link, usePathname } from 'expo-router';
-import { Heart, House, Search, ShoppingBag, User, type LucideIcon } from 'lucide-react-native';
+import { Heart, House, Shirt, ShoppingBag, User, type LucideIcon } from 'lucide-react-native';
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFavorites } from '../../state/favorites';
-import { colors, fonts, layout } from '../../theme/tokens';
+import { fonts, layout } from '../../theme/tokens';
 import { isActivePath } from '../../utils/path';
+import { GlassBackground } from '../ui/GlassBackground';
 import { UText } from '../ui/UText';
+import { makeStyles, useColors } from '../../theme/ThemeProvider';
 
 type Tab = { label: string; href: string; icon: LucideIcon };
 
 const TABS: Tab[] = [
   { label: 'Início', href: '/', icon: House },
-  { label: 'Buscar', href: '/busca', icon: Search },
+  { label: 'Produtos', href: '/produtos', icon: Shirt },
   { label: 'Favoritos', href: '/favoritos', icon: Heart },
   { label: 'Sacola', href: '/carrinho', icon: ShoppingBag },
   { label: 'Conta', href: '/perfil', icon: User },
@@ -28,14 +29,14 @@ export function useBottomNavHeight() {
 
 /** Navegação inferior própria para celulares (Bottom Navigation). */
 export function BottomNav() {
+  const styles = useStyles();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const { count } = useFavorites();
 
   return (
     <View style={[styles.wrapper, { paddingBottom: insets.bottom }]} accessibilityRole="tablist">
-      <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
-      <View style={[StyleSheet.absoluteFill, styles.tint]} />
+      <GlassBackground tint={0.72} intensity={50} />
       <View style={styles.border} />
       <View style={styles.row}>
         {TABS.map((tab) => (
@@ -52,6 +53,8 @@ export function BottomNav() {
 }
 
 function TabButton({ tab, active, badge }: { tab: Tab; active: boolean; badge: number }) {
+  const colors = useColors();
+  const styles = useStyles();
   const Icon = tab.icon;
   const indicator = useAnimatedStyle(() => ({
     opacity: withTiming(active ? 1 : 0, { duration: 220 }),
@@ -78,13 +81,19 @@ function TabButton({ tab, active, badge }: { tab: Tab; active: boolean; badge: n
             </View>
           ) : null}
         </Animated.View>
-        <UText style={[styles.label, { color: active ? colors.white : colors.textDim }]}>{tab.label}</UText>
+        <UText
+          numberOfLines={1}
+          maxFontSizeMultiplier={1.2}
+          style={[styles.label, { color: active ? colors.white : colors.textDim }]}
+        >
+          {tab.label}
+        </UText>
       </Pressable>
     </Link>
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   wrapper: {
     position: 'absolute',
     left: 0,
@@ -92,7 +101,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     zIndex: 40,
   },
-  tint: { backgroundColor: 'rgba(0,0,0,0.72)' },
   border: {
     position: 'absolute',
     top: 0,
@@ -111,7 +119,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: colors.gold,
   },
-  label: { fontFamily: fonts.bodySemiBold, fontSize: 10.5, lineHeight: 13, letterSpacing: 0.3 },
+  label: { fontFamily: fonts.bodySemiBold, fontSize: 11, lineHeight: 14, textAlign: 'center' },
   badge: {
     position: 'absolute',
     top: -5,
@@ -125,4 +133,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   badgeText: { fontFamily: fonts.bodyBold, fontSize: 9, lineHeight: 11, color: colors.black },
-});
+}));

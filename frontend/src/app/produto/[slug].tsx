@@ -15,14 +15,17 @@ import { Reveal } from '../../motion/Reveal';
 import { ApiError, friendlyError } from '../../services/api';
 import { getProductBySlug } from '../../services/products';
 import { useFavorites } from '../../state/favorites';
-import { colors, fonts, radius, spacing } from '../../theme/tokens';
+import { fonts, radius, spacing } from '../../theme/tokens';
 import { discountPercent, formatPrice } from '../../utils/format';
+import { makeStyles, useColors } from '../../theme/ThemeProvider';
 
 /**
  * Página do produto (versão inicial). Galeria completa, seleção de cor,
  * quantidade, produtos relacionados e "adicionar à sacola" chegam nas Etapas 3 e 6.
  */
 export default function ProductPage() {
+  const colors = useColors();
+  const styles = useStyles();
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const request = useRequest(() => getProductBySlug(String(slug)), [slug]);
   const { isDesktop } = useBreakpoint();
@@ -94,7 +97,11 @@ export default function ProductPage() {
                 ) : null}
               </View>
               {images.length > 1 ? (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.thumbs}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.thumbs}
+                >
                   {images.map((uri, i) => (
                     <Pressable
                       key={uri}
@@ -165,7 +172,12 @@ export default function ProductPage() {
                   accessibilityState={{ selected: fav }}
                   style={styles.favorite}
                 >
-                  <Heart size={18} color={colors.gold} fill={fav ? colors.gold : 'transparent'} strokeWidth={1.7} />
+                  <Heart
+                    size={18}
+                    color={colors.gold}
+                    fill={fav ? colors.gold : 'transparent'}
+                    strokeWidth={1.7}
+                  />
                   <UText variant="label">{fav ? 'Nos seus favoritos' : 'Adicionar aos favoritos'}</UText>
                 </Pressable>
               </Reveal>
@@ -186,7 +198,7 @@ export default function ProductPage() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   layout: { gap: spacing.xxl, alignItems: 'flex-start' },
   gallery: {
     aspectRatio: 4 / 5,
@@ -224,7 +236,13 @@ const styles = StyleSheet.create({
   },
   sizeActive: { backgroundColor: colors.white, borderColor: colors.white },
   sizeText: { fontFamily: fonts.bodySemiBold, fontSize: 13, color: colors.text },
-  favorite: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, marginTop: spacing.sm },
+  favorite: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 10,
+    marginTop: spacing.sm,
+  },
   description: { marginTop: spacing.md },
   sku: { marginTop: spacing.md },
-});
+}));

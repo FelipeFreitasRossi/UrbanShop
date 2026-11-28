@@ -9,13 +9,15 @@ import { useBreakpoint } from '../../hooks/useBreakpoint';
 import { ParallaxImage } from '../../motion/ParallaxImage';
 import { Reveal } from '../../motion/Reveal';
 import { useInteraction } from '../../motion/useInteraction';
-import { colors, radius, spacing } from '../../theme/tokens';
+import { radius, spacing } from '../../theme/tokens';
 import { Container, useGutter } from '../layout/Container';
 import { Section, SectionHeader } from '../layout/Section';
 import { UText } from '../ui/UText';
+import { OnDark, makeStyles, useColors } from '../../theme/ThemeProvider';
 
 /** Seção de categorias: grade no desktop, carrossel com "snap" no celular. */
 export function CategoryGrid() {
+  const styles = useStyles();
   const { isMobile, pick, width } = useBreakpoint();
   const gutter = useGutter();
 
@@ -60,7 +62,20 @@ export function CategoryGrid() {
   );
 }
 
-function CategoryCard({ category, index, aspect }: { category: Category; index: number; aspect: number }) {
+type CategoryCardProps = { category: Category; index: number; aspect: number };
+
+/** O card fica sempre escuro (texto claro sobre foto), em qualquer tema. */
+function CategoryCard(props: CategoryCardProps) {
+  return (
+    <OnDark>
+      <CategoryCardContent {...props} />
+    </OnDark>
+  );
+}
+
+function CategoryCardContent({ category, index, aspect }: CategoryCardProps) {
+  const colors = useColors();
+  const styles = useStyles();
   const { hover, pressStyle, handlers } = useInteraction(0.985);
   const { isMobile } = useBreakpoint();
   // Em telas de toque não existe hover: a descrição fica sempre visível.
@@ -123,7 +138,7 @@ function CategoryCard({ category, index, aspect }: { category: Category; index: 
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(() => ({
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   cell: { width: '33.333%' },
   card: { borderRadius: radius.md, overflow: 'hidden' },
@@ -136,4 +151,4 @@ const styles = StyleSheet.create({
   number: { letterSpacing: 2 },
   desc: { marginTop: 4, maxWidth: 300 },
   explore: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: spacing.sm },
-});
+}));

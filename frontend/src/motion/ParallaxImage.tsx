@@ -1,23 +1,25 @@
 import { Image, type ImageContentFit } from 'expo-image';
-import React, { useCallback, useEffect, useRef } from 'react';
-import { Dimensions, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import React, { useEffect } from 'react';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, {
+  Extrapolation,
   interpolate,
+  useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
-  withDelay,
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
-import { colors } from '../theme/tokens';
 import { easeOutExpo } from './easing';
 import { usePageScroll } from './PageScroll';
+import { useContentPosition } from './useContentPosition';
+import { makeStyles } from '../theme/ThemeProvider';
 
 type ParallaxImageProps = {
   uri: string;
   /** Deslocamento máximo em px durante a rolagem (parallax). */
   strength?: number;
-  /** Zoom extra aplicado quando o elemento entra na tela (zoom on scroll). */
+  /** Zoom extra aplicado nas bordas da tela (zoom on scroll). */
   zoom?: number;
   /** Valor 0–1 de hover do card pai, para zoom no desktop. */
   hover?: SharedValue<number>;
@@ -32,11 +34,11 @@ type ParallaxImageProps = {
 
 /**
  * Imagem com Parallax, Zoom on Scroll, Image Reveal e zoom no hover.
- * A imagem é um pouco maior que o quadro para o movimento não mostrar bordas.
+ * Todo o movimento é calculado na UI thread a partir da posição de rolagem.
  */
 export function ParallaxImage({
   uri,
-  strength = 36,
+  strength = 32,
   zoom = 0.08,
   hover,
   reveal = true,
@@ -46,61 +48,54 @@ export function ParallaxImage({
   children,
   priority = 'normal',
 }: ParallaxImageProps) {
-  const { subscribe, reduceMotion, active } = usePageScroll();
+  const styles = useStyles();
+  const { scrollY, viewportH, reduceMotion, active } = usePageScroll();
   const still = reduceMotion || !active;
-
-  const ref = useRef<View>(null);
-  /** 0 = entrando por baixo, 1 = saindo por cima. */
-  const pos = useSharedValue(0.5);
+  const { ref, top, height, measure } = useContentPosition(!still);
   const shown = useSharedValue(still || !reveal ? 1 : 0);
-  const revealed = useRef(still || !reveal);
 
-  const update = useCallback(() => {
-    const node = ref.current;
-    if (!node) return;
-    node.measureInWindow((_x, y, _w, h) => {
-      if (h === 0) return;
-      const vh = Dimensions.get('window').height;
-      const p = Math.min(1, Math.max(0, (vh - y) / (vh + h)));
-      pos.set(p);
-      if (!revealed.current && y < vh * 0.95 && y + h > 0) {
-        revealed.current = true;
-        shown.set(withDelay(60, withTiming(1, { duration: 1200, easing: easeOutExpo })));
+  useAnimatedReaction(
+    () => top.value >= 0 && viewportH.value > 0 && scrollY.value + viewportH.value * 0.95 > top.value,
+    (visible) => {
+      if (visible && shown.get() === 0) {
+        shown.set(withTiming(1, { duration: 1100, easing: easeOutExpo }));
       }
-    });
-  }, [pos, shown]);
+    },
+  );
 
+  // Segurança: se a medição falhar, a imagem aparece mesmo assim.
   useEffect(() => {
     if (still) return;
-    const unsub = subscribe(update);
-    const t = setTimeout(update, 60);
-    return () => {
-      clearTimeout(t);
-      unsub();
-    };
-  }, [still, subscribe, update]);
+    const t = setTimeout(() => {
+      if (top.get() < 0 && shown.get() === 0) shown.set(withTiming(1, { duration: 300 }));
+    }, 2500);
+    return () => clearTimeout(t);
+  }, [still, top, shown]);
 
   const imageStyle = useAnimatedStyle(() => {
     const h = hover ? hover.value : 0;
-    if (still) {
-      return { transform: [{ scale: 1 + h * 0.05 }] };
+    if (still || top.value < 0) {
+      return { opacity: shown.value, transform: [{ scale: 1 + h * 0.05 }] };
     }
-    const translateY = interpolate(pos.value, [0, 1], [-strength, strength]);
-    const scrollZoom = interpolate(pos.value, [0, 0.5, 1], [zoom, 0, zoom * 0.5]);
-    const revealZoom = interpolate(shown.value, [0, 1], [0.14, 0]);
+    const vh = viewportH.value;
+    // 0 = entrando por baixo da tela, 1 = saindo por cima.
+    const p = interpolate(
+      scrollY.value + vh - top.value,
+      [0, vh + height.value],
+      [0, 1],
+      Extrapolation.CLAMP,
+    );
+    const translateY = interpolate(p, [0, 1], [-strength, strength]);
+    const scrollZoom = interpolate(p, [0, 0.5, 1], [zoom, 0, zoom * 0.5]);
+    const revealZoom = (1 - shown.value) * 0.12;
     return {
-      opacity: interpolate(shown.value, [0, 1], [0, 1]),
+      opacity: shown.value,
       transform: [{ translateY }, { scale: 1 + scrollZoom + revealZoom + h * 0.05 }],
     };
   });
 
   return (
-    <View
-      ref={ref}
-      collapsable={false}
-      onLayout={still ? undefined : update}
-      style={[styles.frame, style]}
-    >
+    <View ref={ref} collapsable={false} onLayout={still ? undefined : measure} style={[styles.frame, style]}>
       <Animated.View
         style={[
           StyleSheet.absoluteFill,
@@ -112,9 +107,10 @@ export function ParallaxImage({
           source={{ uri }}
           style={StyleSheet.absoluteFill}
           contentFit={contentFit}
-          transition={400}
+          transition={300}
           cachePolicy="memory-disk"
           priority={priority}
+          recyclingKey={uri}
           accessibilityLabel={accessibilityLabel}
           accessible={!!accessibilityLabel}
         />
@@ -124,9 +120,9 @@ export function ParallaxImage({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   frame: {
     overflow: 'hidden',
     backgroundColor: colors.surface,
   },
-});
+}));

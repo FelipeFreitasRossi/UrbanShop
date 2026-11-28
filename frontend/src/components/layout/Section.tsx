@@ -1,15 +1,16 @@
 import { Link, type Href } from 'expo-router';
 import { ArrowRight } from 'lucide-react-native';
 import React from 'react';
-import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { interpolate, interpolateColor, useAnimatedStyle } from 'react-native-reanimated';
 import { useBreakpoint } from '../../hooks/useBreakpoint';
 import { Reveal } from '../../motion/Reveal';
 import { usePageScroll } from '../../motion/PageScroll';
 import { useInteraction } from '../../motion/useInteraction';
-import { colors, spacing } from '../../theme/tokens';
+import { spacing } from '../../theme/tokens';
 import { UText } from '../ui/UText';
 import { Container } from './Container';
+import { makeStyles, useColors } from '../../theme/ThemeProvider';
 
 type SectionProps = {
   children: React.ReactNode;
@@ -44,6 +45,7 @@ type SectionHeaderProps = {
 
 /** Cabeçalho de seção: rótulo dourado, título, descrição e link "ver tudo". */
 export function SectionHeader({ eyebrow, title, description, action }: SectionHeaderProps) {
+  const styles = useStyles();
   const { isMobile } = useBreakpoint();
   return (
     <Container>
@@ -79,6 +81,8 @@ export function SectionHeader({ eyebrow, title, description, action }: SectionHe
 
 /** Link de texto com sublinhado dourado animado e seta. */
 export function TextLink({ label, href }: { label: string; href: Href }) {
+  const colors = useColors();
+  const styles = useStyles();
   const { hover, handlers } = useInteraction();
   const line = useAnimatedStyle(() => ({
     transform: [{ scaleX: interpolate(hover.value, [0, 1], [0.25, 1]) }],
@@ -102,7 +106,7 @@ export function TextLink({ label, href }: { label: string; href: Href }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(() => ({
   header: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -125,4 +129,4 @@ const styles = StyleSheet.create({
     width: '100%',
     transformOrigin: 'left',
   },
-});
+}));

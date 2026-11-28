@@ -9,15 +9,18 @@ import { useBreakpoint } from '../../hooks/useBreakpoint';
 import { usePageScroll } from '../../motion/PageScroll';
 import { Reveal } from '../../motion/Reveal';
 import { useInteraction } from '../../motion/useInteraction';
-import { colors, fonts, spacing } from '../../theme/tokens';
+import { fonts, spacing } from '../../theme/tokens';
 import { Logo } from '../brand/Logo';
 import { UText } from '../ui/UText';
 import { Container } from './Container';
+import { makeStyles, useColors } from '../../theme/ThemeProvider';
 
 type FooterLink = { label: string; href?: string; external?: string };
 
 /** Rodapé com links institucionais, atendimento, redes sociais e informações comerciais. */
 export function Footer() {
+  const colors = useColors();
+  const styles = useStyles();
   const { isMobile, pick } = useBreakpoint();
   const { scrollToTop } = usePageScroll();
 
@@ -31,6 +34,7 @@ export function Footer() {
     {
       title: 'Loja',
       links: [
+        { label: 'Todos os produtos', href: '/produtos' },
         { label: 'Novidades', href: '/novidades' },
         { label: 'Masculino', href: '/masculino' },
         { label: 'Feminino', href: '/feminino' },
@@ -41,7 +45,8 @@ export function Footer() {
     {
       title: 'Minha conta',
       links: [
-        { label: 'Entrar ou cadastrar', href: '/perfil' },
+        { label: 'Entrar ou cadastrar', href: '/entrar' },
+        { label: 'Configurações', href: '/configuracoes' },
         { label: 'Favoritos', href: '/favoritos' },
         { label: 'Sacola', href: '/carrinho' },
       ],
@@ -59,8 +64,8 @@ export function Footer() {
           <Reveal style={styles.brand}>
             <Logo size={pick(24, 26, 28)} />
             <UText variant="body" style={styles.tagline}>
-              Streetwear com identidade própria. Design urbano, acabamento premium e um programa de
-              fidelidade que valoriza cada compra.
+              Streetwear com identidade própria. Design urbano, acabamento premium e um programa de fidelidade
+              que valoriza cada compra.
             </UText>
             {social.length > 0 ? (
               <View style={styles.socialRow}>
@@ -118,6 +123,8 @@ export function Footer() {
 }
 
 function FooterAnchor({ link }: { link: FooterLink }) {
+  const colors = useColors();
+  const styles = useStyles();
   const { hover, handlers } = useInteraction();
   const color = useAnimatedStyle(() => ({
     color: interpolateColor(hover.value, [0, 1], [colors.textMuted, colors.white]),
@@ -148,7 +155,7 @@ function FooterAnchor({ link }: { link: FooterLink }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   footer: {
     backgroundColor: colors.ink,
     borderTopWidth: StyleSheet.hairlineWidth,
@@ -175,4 +182,4 @@ const styles = StyleSheet.create({
   bottomMobile: { flexDirection: 'column', alignItems: 'flex-start', gap: spacing.lg },
   legal: { gap: 4 },
   toTop: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8 },
-});
+}));

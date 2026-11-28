@@ -41,7 +41,10 @@ export default function FavoritesPage() {
           ) : (
             <View style={[styles.grid, { marginHorizontal: -gap / 2, rowGap: pick(28, 36, 48) }]}>
               {items.map((p, i) => (
-                <View key={p.id} style={{ width: `${100 / cols}%` as `${number}%`, paddingHorizontal: gap / 2 }}>
+                <View
+                  key={p.id}
+                  style={{ width: `${100 / cols}%` as `${number}%`, paddingHorizontal: gap / 2 }}
+                >
                   <Reveal delay={(i % cols) * 80}>
                     <ProductCard product={p} />
                   </Reveal>

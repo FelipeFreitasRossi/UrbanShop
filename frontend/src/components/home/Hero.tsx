@@ -13,21 +13,33 @@ import Animated, {
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
-import { media } from '../../config/media';
+import { media, sized } from '../../config/media';
 import { useBreakpoint } from '../../hooks/useBreakpoint';
 import { easeInOut, easeOutExpo } from '../../motion/easing';
 import { usePageScroll } from '../../motion/PageScroll';
-import { colors, spacing } from '../../theme/tokens';
+import { spacing } from '../../theme/tokens';
 import { Container } from '../layout/Container';
 import { useHeaderHeight } from '../layout/Header';
 import { Button } from '../ui/Button';
 import { UText } from '../ui/UText';
+import { OnDark, makeStyles, useColors } from '../../theme/ThemeProvider';
 
 /**
  * Hero da home: foto em tela cheia com parallax e zoom, gradiente escuro,
  * título com entrada escalonada e indicador de rolagem.
  */
 export function Hero() {
+  // A Hero fica sempre escura (texto claro sobre foto), em qualquer tema.
+  return (
+    <OnDark>
+      <HeroContent />
+    </OnDark>
+  );
+}
+
+function HeroContent() {
+  const colors = useColors();
+  const styles = useStyles();
   const { height, isMobile, pick } = useBreakpoint();
   const { scrollY, scrollToAnchor, reduceMotion } = usePageScroll();
   const headerHeight = useHeaderHeight();
@@ -60,7 +72,9 @@ export function Hero() {
     const y = scrollY.value;
     return {
       opacity: interpolate(y, [0, heroHeight * 0.55], [1, 0], Extrapolation.CLAMP),
-      transform: [{ translateY: interpolate(y, [0, heroHeight], [0, -heroHeight * 0.18], Extrapolation.CLAMP) }],
+      transform: [
+        { translateY: interpolate(y, [0, heroHeight], [0, -heroHeight * 0.18], Extrapolation.CLAMP) },
+      ],
     };
   });
 
@@ -68,7 +82,7 @@ export function Hero() {
     <View style={[styles.hero, { height: heroHeight }]} accessibilityRole="header">
       <Animated.View style={[styles.imageWrap, imageStyle]}>
         <Image
-          source={{ uri: media.hero }}
+          source={{ uri: sized(media.hero, pick(900, 1400, 2000)) }}
           style={StyleSheet.absoluteFill}
           contentFit="cover"
           contentPosition={isMobile ? 'center' : 'top center'}
@@ -113,8 +127,8 @@ export function Hero() {
 
             <IntroItem index={2} intro={intro}>
               <UText variant="bodyLg" style={[styles.lead, { maxWidth: pick(360, 480, 520) }]}>
-                A UrbanShop une streetwear essencial, corte preciso e materiais pensados para o ritmo
-                da rua. Peças feitas para durar e para serem notadas.
+                A UrbanShop une streetwear essencial, corte preciso e materiais pensados para o ritmo da rua.
+                Peças feitas para durar e para serem notadas.
               </UText>
             </IntroItem>
 
@@ -165,6 +179,7 @@ function IntroItem({
 
 /** Indicador "role para baixo" com linha dourada em movimento. */
 function ScrollCue() {
+  const styles = useStyles();
   const { reduceMotion } = usePageScroll();
   const t = useSharedValue(0);
   useEffect(() => {
@@ -194,7 +209,7 @@ function ScrollCue() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   hero: { width: '100%', overflow: 'hidden', backgroundColor: colors.black },
   imageWrap: { ...StyleSheet.absoluteFillObject },
   content: {
@@ -211,4 +226,4 @@ const styles = StyleSheet.create({
   cueText: { textTransform: 'uppercase', letterSpacing: 3 },
   cueTrack: { width: 1, height: 80, overflow: 'hidden', backgroundColor: colors.line },
   cueLine: { width: 1, height: 40, backgroundColor: colors.gold },
-});
+}));

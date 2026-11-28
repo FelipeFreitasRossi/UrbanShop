@@ -13,9 +13,10 @@ import Animated, {
 } from 'react-native-reanimated';
 import { easeInOut } from '../../motion/easing';
 import { useInteraction } from '../../motion/useInteraction';
-import { colors, fonts, radius } from '../../theme/tokens';
+import { fonts, radius } from '../../theme/tokens';
 import { Logo } from '../brand/Logo';
 import { UText } from '../ui/UText';
+import { OnDark, makeStyles } from '../../theme/ThemeProvider';
 
 export type LoyaltyTier = 'URBAN_BASIC' | 'URBAN_SILVER' | 'URBAN_GOLD' | 'URBAN_BLACK';
 
@@ -39,7 +40,23 @@ type LoyaltyCardVisualProps = {
  * Cartão fidelidade premium: preto, detalhes dourados, brilho sutil
  * e leve inclinação no hover.
  */
-export function LoyaltyCardVisual({ tier = 'URBAN_BLACK', holderName, cardNumber, points, width = 380 }: LoyaltyCardVisualProps) {
+export function LoyaltyCardVisual(props: LoyaltyCardVisualProps) {
+  // O cartão é sempre preto com dourado, em qualquer tema.
+  return (
+    <OnDark>
+      <LoyaltyCardContent {...props} />
+    </OnDark>
+  );
+}
+
+function LoyaltyCardContent({
+  tier = 'URBAN_BLACK',
+  holderName,
+  cardNumber,
+  points,
+  width = 380,
+}: LoyaltyCardVisualProps) {
+  const styles = useStyles();
   const reduce = useReducedMotion();
   const { hover, handlers } = useInteraction();
   const sheen = useSharedValue(0);
@@ -48,7 +65,10 @@ export function LoyaltyCardVisual({ tier = 'URBAN_BLACK', holderName, cardNumber
     if (reduce) return;
     sheen.set(
       withRepeat(
-        withSequence(withDelay(2200, withTiming(1, { duration: 1800, easing: easeInOut })), withTiming(0, { duration: 0 })),
+        withSequence(
+          withDelay(2200, withTiming(1, { duration: 1800, easing: easeInOut })),
+          withTiming(0, { duration: 0 }),
+        ),
         -1,
       ),
     );
@@ -70,7 +90,11 @@ export function LoyaltyCardVisual({ tier = 'URBAN_BLACK', holderName, cardNumber
   const isPreview = !holderName;
 
   return (
-    <Pressable {...handlers} accessible accessibilityLabel={`Cartão fidelidade UrbanShop, nível ${TIER_LABEL[tier]}`}>
+    <Pressable
+      {...handlers}
+      accessible
+      accessibilityLabel={`Cartão fidelidade UrbanShop, nível ${TIER_LABEL[tier]}`}
+    >
       <Animated.View style={[styles.shadow, { width, height, borderRadius: radius.xl }, tilt]}>
         <LinearGradient
           colors={['#1B1B1B', '#090909', '#121212']}
@@ -80,10 +104,23 @@ export function LoyaltyCardVisual({ tier = 'URBAN_BLACK', holderName, cardNumber
           style={[StyleSheet.absoluteFill, { borderRadius: radius.xl }]}
         />
         {/* Linhas finas decorativas */}
-        <View style={[styles.arc, { width: width * 0.9, height: width * 0.9, right: -width * 0.45, top: -width * 0.3 }]} />
-        <View style={[styles.arc, { width: width * 0.65, height: width * 0.65, right: -width * 0.32, top: -width * 0.15 }]} />
+        <View
+          style={[
+            styles.arc,
+            { width: width * 0.9, height: width * 0.9, right: -width * 0.45, top: -width * 0.3 },
+          ]}
+        />
+        <View
+          style={[
+            styles.arc,
+            { width: width * 0.65, height: width * 0.65, right: -width * 0.32, top: -width * 0.15 },
+          ]}
+        />
 
-        <View style={[StyleSheet.absoluteFill, styles.clip, { borderRadius: radius.xl }]} pointerEvents="none">
+        <View
+          style={[StyleSheet.absoluteFill, styles.clip, { borderRadius: radius.xl }]}
+          pointerEvents="none"
+        >
           <Animated.View style={[styles.sheen, { height: height * 2, top: -height / 2 }, sheenStyle]}>
             <LinearGradient
               colors={['rgba(226,201,143,0)', 'rgba(226,201,143,0.16)', 'rgba(226,201,143,0)']}
@@ -132,7 +169,7 @@ export function LoyaltyCardVisual({ tier = 'URBAN_BLACK', holderName, cardNumber
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   shadow: {
     shadowColor: '#000',
     shadowOpacity: 0.6,
@@ -159,8 +196,7 @@ const styles = StyleSheet.create({
   tier: {
     fontFamily: fonts.bodyBold,
     color: colors.gold,
-    textTransform: 'uppercase',
-    letterSpacing: 2.4,
+    letterSpacing: 0.4,
   },
   chip: {
     borderRadius: 6,
@@ -189,4 +225,4 @@ const styles = StyleSheet.create({
   fieldValue: { fontFamily: fonts.headingBold, color: colors.white },
   number: { fontFamily: fonts.bodyMedium, color: colors.textMuted, letterSpacing: 2 },
   points: { fontFamily: fonts.heading, color: colors.goldLight },
-});
+}));

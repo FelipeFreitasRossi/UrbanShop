@@ -3,23 +3,34 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useBreakpoint } from '../../hooks/useBreakpoint';
 import { Reveal } from '../../motion/Reveal';
-import { colors, radius, spacing } from '../../theme/tokens';
+import { radius, spacing } from '../../theme/tokens';
 import { Container } from '../layout/Container';
 import { Section } from '../layout/Section';
 import { LoyaltyCardVisual, TIER_LABEL, type LoyaltyTier } from '../loyalty/LoyaltyCardVisual';
 import { Button } from '../ui/Button';
 import { UText } from '../ui/UText';
+import { makeStyles, useColors } from '../../theme/ThemeProvider';
 
 const TIERS: LoyaltyTier[] = ['URBAN_BASIC', 'URBAN_SILVER', 'URBAN_GOLD', 'URBAN_BLACK'];
 
 const BENEFITS = [
   { icon: Gift, title: 'Cupons de desconto', text: 'Troque seus pontos por descontos nas próximas compras.' },
-  { icon: Truck, title: 'Frete grátis', text: 'Use pontos para zerar o frete quando o resgate estiver disponível.' },
-  { icon: Sparkles, title: 'Acesso antecipado', text: 'Níveis mais altos conhecem as coleções antes de todo mundo.' },
+  {
+    icon: Truck,
+    title: 'Frete grátis',
+    text: 'Use pontos para zerar o frete quando o resgate estiver disponível.',
+  },
+  {
+    icon: Sparkles,
+    title: 'Acesso antecipado',
+    text: 'Níveis mais altos conhecem as coleções antes de todo mundo.',
+  },
 ];
 
 /** Apresenta o programa de fidelidade e incentiva o cadastro. */
 export function LoyaltyTeaser() {
+  const colors = useColors();
+  const styles = useStyles();
   const { isDesktop, pick, width } = useBreakpoint();
   const cardWidth = Math.min(pick(width - 40, 420, 440), 440);
 
@@ -38,8 +49,8 @@ export function LoyaltyTeaser() {
             </Reveal>
             <Reveal delay={160}>
               <UText variant="bodyLg" style={styles.lead}>
-                Ao criar sua conta você recebe automaticamente o cartão fidelidade digital
-                UrbanShop. Suas compras confirmadas viram pontos, e os pontos viram benefícios.
+                Ao criar sua conta você recebe automaticamente o cartão fidelidade digital UrbanShop. Suas
+                compras confirmadas viram pontos, e os pontos viram benefícios.
               </UText>
             </Reveal>
 
@@ -77,7 +88,14 @@ export function LoyaltyTeaser() {
             </Reveal>
 
             <Reveal delay={560}>
-              <Button label="Criar minha conta" href="/perfil" variant="gold" arrow size="lg" style={styles.cta} />
+              <Button
+                label="Criar minha conta"
+                href="/perfil"
+                variant="gold"
+                arrow
+                size="lg"
+                style={styles.cta}
+              />
             </Reveal>
           </View>
 
@@ -92,7 +110,7 @@ export function LoyaltyTeaser() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   section: {
     backgroundColor: colors.ink,
     borderTopWidth: StyleSheet.hairlineWidth,
@@ -141,4 +159,4 @@ const styles = StyleSheet.create({
   },
   cta: { marginTop: spacing.xl, alignSelf: 'flex-start' },
   cardSide: { alignItems: 'center', justifyContent: 'center', borderRadius: radius.xl },
-});
+}));

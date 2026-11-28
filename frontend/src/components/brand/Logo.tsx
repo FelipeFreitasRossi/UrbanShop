@@ -1,7 +1,8 @@
 import { Link } from 'expo-router';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, fonts } from '../../theme/tokens';
+import { Pressable, Text, View } from 'react-native';
+import { fonts } from '../../theme/tokens';
+import { makeStyles } from '../../theme/ThemeProvider';
 
 type LogoProps = {
   size?: number;
@@ -9,26 +10,31 @@ type LogoProps = {
   linkHome?: boolean;
 };
 
-/** Marca nominativa UrbanShop: "URBAN" pesado, "SHOP" leve e ponto dourado. */
+/**
+ * Marca nominativa "UrbanShop": "Urban" em peso forte, "Shop" leve e um ponto dourado.
+ * O nome é escrito em um único texto, para nunca ser medido ou cortado em partes.
+ */
 export function Logo({ size = 22, linkHome = false }: LogoProps) {
+  const styles = useStyles();
   const mark = (
     <View style={styles.row} accessible accessibilityLabel="UrbanShop">
       <Text
         allowFontScaling={false}
-        style={[styles.urban, { fontSize: size, lineHeight: size * 1.1, letterSpacing: size * 0.06 }]}
+        numberOfLines={1}
+        style={[styles.text, { fontSize: size, lineHeight: Math.round(size * 1.25) }]}
       >
-        URBAN
-      </Text>
-      <Text
-        allowFontScaling={false}
-        style={[styles.shop, { fontSize: size, lineHeight: size * 1.1, letterSpacing: size * 0.06 }]}
-      >
-        SHOP
+        <Text style={styles.urban}>Urban</Text>
+        <Text style={styles.shop}>Shop</Text>
       </Text>
       <View
         style={[
           styles.dot,
-          { width: size * 0.22, height: size * 0.22, marginLeft: size * 0.08, marginBottom: size * 0.16 },
+          {
+            width: Math.max(4, size * 0.2),
+            height: Math.max(4, size * 0.2),
+            marginLeft: size * 0.1,
+            marginBottom: size * 0.22,
+          },
         ]}
       />
     </View>
@@ -45,9 +51,10 @@ export function Logo({ size = 22, linkHome = false }: LogoProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   row: { flexDirection: 'row', alignItems: 'flex-end' },
+  text: { color: colors.white, includeFontPadding: false },
   urban: { fontFamily: fonts.display, color: colors.white },
   shop: { fontFamily: fonts.headingLight, color: colors.white },
   dot: { backgroundColor: colors.gold, borderRadius: 999 },
-});
+}));

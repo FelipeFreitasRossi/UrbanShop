@@ -2,6 +2,7 @@
 <!-- Mapa do site. As páginas de produto serão adicionadas automaticamente na Etapa 3. -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://urbanshop.com/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://urbanshop.com/produtos</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
   <url><loc>https://urbanshop.com/novidades</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://urbanshop.com/masculino</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://urbanshop.com/feminino</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>

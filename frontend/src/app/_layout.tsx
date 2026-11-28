@@ -15,15 +15,35 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import { SplashOverlay } from '../components/brand/SplashOverlay';
+import { BreakpointProvider } from '../hooks/useBreakpoint';
+import { AuthProvider } from '../state/auth';
 import { FavoritesProvider } from '../state/favorites';
-import { colors } from '../theme/tokens';
+import { QuickViewProvider } from '../state/quickView';
+import { ThemeProvider, useTheme } from '../theme/ThemeProvider';
 
 // Mantém a splash nativa (preta) até a tela de carregamento animada assumir.
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
+  return (
+    <ThemeProvider>
+      <BreakpointProvider>
+        <AuthProvider>
+          <FavoritesProvider>
+            <QuickViewProvider>
+              <AppShell />
+            </QuickViewProvider>
+          </FavoritesProvider>
+        </AuthProvider>
+      </BreakpointProvider>
+    </ThemeProvider>
+  );
+}
+
+function AppShell() {
+  const { colors, scheme } = useTheme();
   const [fontsLoaded, fontError] = useFonts({
     Archivo_300Light,
     Archivo_700Bold,
@@ -37,7 +57,6 @@ export default function RootLayout() {
   const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
-    // As duas telas são pretas: a troca é imperceptível.
     SplashScreen.hideAsync().catch(() => {});
   }, []);
 
@@ -47,10 +66,15 @@ export default function RootLayout() {
 
   const finishSplash = useCallback(() => setShowSplash(false), []);
 
+  // As páginas só são desenhadas depois das fontes. Se fossem desenhadas antes,
+  // o celular mediria cada texto com a fonte do sistema e, ao trocar para a
+  // fonte da marca (mais larga), cortaria as últimas letras ("Cont", "Sacol").
+  const fontsReady = fontsLoaded || !!fontError;
+
   return (
-    <FavoritesProvider>
-      <View style={styles.root}>
-        <StatusBar style="light" />
+    <View style={{ flex: 1, backgroundColor: colors.black }}>
+      <StatusBar style={scheme === 'light' ? 'dark' : 'light'} />
+      {fontsReady ? (
         <Stack
           screenOptions={{
             headerShown: false,
@@ -58,12 +82,8 @@ export default function RootLayout() {
             animation: 'fade',
           }}
         />
-        {showSplash ? <SplashOverlay ready={fontsLoaded || !!fontError} onFinish={finishSplash} /> : null}
-      </View>
-    </FavoritesProvider>
+      ) : null}
+      {showSplash ? <SplashOverlay ready={fontsReady} onFinish={finishSplash} /> : null}
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.black },
-});

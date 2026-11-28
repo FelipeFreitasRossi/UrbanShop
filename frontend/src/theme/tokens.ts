@@ -3,32 +3,7 @@
  * Preto predominante, branco para contraste e dourado apenas em detalhes.
  */
 
-export const colors = {
-  black: '#000000',
-  ink: '#070707',
-  surface: '#0F0F0F',
-  surfaceRaised: '#151515',
-  surfaceHover: '#1C1C1C',
-
-  line: 'rgba(255,255,255,0.09)',
-  lineStrong: 'rgba(255,255,255,0.2)',
-
-  white: '#FFFFFF',
-  text: '#F4F3EF',
-  textMuted: 'rgba(244,243,239,0.64)',
-  textDim: 'rgba(244,243,239,0.42)',
-
-  gold: '#C8A75E',
-  goldLight: '#E2C98F',
-  goldDeep: '#8E7339',
-  goldSoft: 'rgba(200,167,94,0.12)',
-  goldLine: 'rgba(200,167,94,0.42)',
-
-  danger: '#E5484D',
-  success: '#4CC38A',
-
-  overlay: 'rgba(0,0,0,0.55)',
-} as const;
+// As cores ficam em ./palettes.ts (tema escuro e claro) e são lidas com useColors().
 
 export const fonts = {
   display: 'Archivo_900Black',

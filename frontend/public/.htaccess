@@ -4,11 +4,21 @@
 Options -MultiViews -Indexes
 RewriteEngine On
 
-# Força HTTPS (ative depois que o certificado SSL estiver instalado no domínio).
-# RewriteCond %{HTTPS} off
-# RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+# ---------------------------------------------------------------------------
+# 1) HTTPS obrigatório
+# Sem HTTPS o navegador mostra "Não seguro" e senhas trafegariam abertas.
+# Pré-requisito: certificado SSL ativo no domínio (na HostGator: cPanel > SSL/TLS
+# Status > AutoSSL, gratuito). Depois de ativar o certificado, este bloco força
+# todo acesso a usar https:// e o domínio principal sem "www".
+# ---------------------------------------------------------------------------
+RewriteCond %{HTTPS} off [OR]
+RewriteCond %{HTTP_HOST} ^www\. [NC]
+RewriteCond %{HTTP_HOST} !^localhost [NC]
+RewriteRule ^ https://urbanshop.com%{REQUEST_URI} [L,R=301]
 
-# URLs amigáveis: /masculino -> masculino.html
+# ---------------------------------------------------------------------------
+# 2) URLs amigáveis: /masculino -> masculino.html
+# ---------------------------------------------------------------------------
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME}.html -f
@@ -20,7 +30,31 @@ RewriteRule ^produto/([^/]+)/?$ produto/[slug].html [L]
 
 ErrorDocument 404 /+not-found.html
 
-# Cache longo para arquivos com hash (JS, CSS, fontes, imagens do bundle).
+# ---------------------------------------------------------------------------
+# 3) Cabeçalhos de segurança
+# ---------------------------------------------------------------------------
+<IfModule mod_headers.c>
+  # Navegador passa a usar SEMPRE HTTPS neste domínio por 1 ano (HSTS).
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=HTTPS
+  # Impede o navegador de "adivinhar" tipos de arquivo.
+  Header always set X-Content-Type-Options "nosniff"
+  # Impede que o site seja aberto dentro de outro site (proteção contra clickjacking).
+  Header always set X-Frame-Options "SAMEORIGIN"
+  # Não envia o endereço completo da página para outros sites.
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  # Bloqueia recursos do aparelho que a loja não usa.
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)"
+  # Isola a janela de pop-ups de outros sites.
+  Header always set Cross-Origin-Opener-Policy "same-origin"
+  # Política de conteúdo: só carrega scripts do próprio site; imagens via HTTPS;
+  # conexões só com a própria API, o ViaCEP e o Mercado Pago.
+  # Ajuste "api.urbanshop.com" se a API tiver outro endereço.
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://api.urbanshop.com https://viacep.com.br https://api.mercadopago.com; frame-src https://www.mercadopago.com.br; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests"
+</IfModule>
+
+# ---------------------------------------------------------------------------
+# 4) Cache e compressão
+# ---------------------------------------------------------------------------
 <IfModule mod_expires.c>
   ExpiresActive On
   ExpiresByType text/html "access plus 0 seconds"
@@ -36,3 +70,8 @@ ErrorDocument 404 /+not-found.html
 <IfModule mod_deflate.c>
   AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json image/svg+xml
 </IfModule>
+
+# Bloqueia acesso a arquivos sensíveis, caso sejam enviados por engano.
+<FilesMatch "^\.(env|git)|\.(log|map)$">
+  Require all denied
+</FilesMatch>

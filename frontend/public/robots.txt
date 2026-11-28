@@ -4,5 +4,10 @@ Disallow: /busca
 Disallow: /favoritos
 Disallow: /carrinho
 Disallow: /perfil
+Disallow: /entrar
+Disallow: /cadastro
+Disallow: /recuperar-senha
+Disallow: /redefinir-senha
+Disallow: /configuracoes
 
 Sitemap: https://urbanshop.com/sitemap.xml

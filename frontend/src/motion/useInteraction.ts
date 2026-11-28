@@ -1,10 +1,5 @@
 import { useCallback } from 'react';
-import {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated';
+import { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { easeOutQuart } from './easing';
 
 /**

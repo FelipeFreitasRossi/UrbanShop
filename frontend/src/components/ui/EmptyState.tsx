@@ -3,9 +3,10 @@ import type { Href } from 'expo-router';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Reveal } from '../../motion/Reveal';
-import { colors, radius, spacing } from '../../theme/tokens';
+import { radius, spacing } from '../../theme/tokens';
 import { Button } from './Button';
 import { UText } from './UText';
+import { makeStyles, useColors } from '../../theme/ThemeProvider';
 
 type EmptyStateProps = {
   icon?: LucideIcon;
@@ -17,6 +18,8 @@ type EmptyStateProps = {
 
 /** Estado vazio / erro com mensagem clara e, quando fizer sentido, uma ação. */
 export function EmptyState({ icon: Icon, title, message, action, compact = false }: EmptyStateProps) {
+  const colors = useColors();
+  const styles = useStyles();
   return (
     <Reveal variant="fade">
       <View style={[styles.box, compact && styles.compact]}>
@@ -48,7 +51,7 @@ export function EmptyState({ icon: Icon, title, message, action, compact = false
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   box: {
     alignItems: 'center',
     paddingVertical: spacing.huge,
@@ -72,4 +75,4 @@ const styles = StyleSheet.create({
   },
   message: { maxWidth: 460 },
   action: { marginTop: spacing.md },
-});
+}));

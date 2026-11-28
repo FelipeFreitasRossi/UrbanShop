@@ -1,6 +1,5 @@
-import { BlurView } from 'expo-blur';
 import { Link, usePathname } from 'expo-router';
-import { Heart, Menu, Search, ShoppingBag, User } from 'lucide-react-native';
+import { Heart, Menu, Search, Settings, ShoppingBag, User } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
@@ -14,12 +13,15 @@ import { MAIN_NAV, type NavItem } from '../../config/navigation';
 import { useBreakpoint } from '../../hooks/useBreakpoint';
 import { usePageScroll } from '../../motion/PageScroll';
 import { useInteraction } from '../../motion/useInteraction';
+import { useAuth } from '../../state/auth';
 import { useFavorites } from '../../state/favorites';
-import { colors, fonts, layout } from '../../theme/tokens';
+import { fonts, layout } from '../../theme/tokens';
 import { isActivePath } from '../../utils/path';
 import { Logo } from '../brand/Logo';
+import { GlassBackground } from '../ui/GlassBackground';
 import { IconButton } from '../ui/IconButton';
 import { MobileMenu } from './MobileMenu';
+import { makeStyles, useColors, useTheme } from '../../theme/ThemeProvider';
 
 /** Altura total ocupada pelo header (inclui a área segura do topo no celular). */
 /** Largura mínima para exibir todos os links do menu no header. */
@@ -28,9 +30,7 @@ const FULL_NAV_MIN_WIDTH = 1200;
 export function useHeaderHeight() {
   const { width } = useBreakpoint();
   const insets = useSafeAreaInsets();
-  return width >= FULL_NAV_MIN_WIDTH
-    ? layout.headerHeightDesktop
-    : layout.headerHeightMobile + insets.top;
+  return width >= FULL_NAV_MIN_WIDTH ? layout.headerHeightDesktop : layout.headerHeightMobile + insets.top;
 }
 
 /**
@@ -38,18 +38,22 @@ export function useHeaderHeight() {
  * translúcido com desfoque (blur) e uma linha inferior sutil.
  */
 export function Header() {
+  const styles = useStyles();
   const { isMobile, width } = useBreakpoint();
   const isDesktop = width >= FULL_NAV_MIN_WIDTH;
   const roomy = width >= 1400;
   const { scrollY } = usePageScroll();
   const insets = useSafeAreaInsets();
   const favorites = useFavorites();
+  const { user } = useAuth();
   const pathname = usePathname();
   const height = useHeaderHeight();
   const [menuOpen, setMenuOpen] = useState(false);
 
+  // No tema escuro o header começa transparente sobre a foto; no claro já começa com fundo.
+  const solidFromStart = useTheme().scheme === 'light';
   const backdrop = useAnimatedStyle(() => ({
-    opacity: interpolate(scrollY.value, [0, 140], [0, 1], Extrapolation.CLAMP),
+    opacity: solidFromStart ? 1 : interpolate(scrollY.value, [0, 140], [0, 1], Extrapolation.CLAMP),
   }));
   const border = useAnimatedStyle(() => ({
     opacity: interpolate(scrollY.value, [60, 200], [0, 1], Extrapolation.CLAMP),
@@ -58,8 +62,7 @@ export function Header() {
   return (
     <View style={[styles.wrapper, { height }]} pointerEvents="box-none">
       <Animated.View style={[StyleSheet.absoluteFill, backdrop]} pointerEvents="none">
-        <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
-        <View style={[StyleSheet.absoluteFill, styles.tint]} />
+        <GlassBackground tint={0.62} intensity={40} />
       </Animated.View>
       <Animated.View style={[styles.border, border]} pointerEvents="none" />
 
@@ -94,8 +97,24 @@ export function Header() {
                 badge={favorites.count}
                 active={pathname === '/favoritos'}
               />
-              <IconButton icon={ShoppingBag} label="Sacola" href="/carrinho" active={pathname === '/carrinho'} />
-              <IconButton icon={User} label="Minha conta" href="/perfil" active={pathname === '/perfil'} />
+              <IconButton
+                icon={ShoppingBag}
+                label="Sacola"
+                href="/carrinho"
+                active={pathname === '/carrinho'}
+              />
+              <IconButton
+                icon={User}
+                label={user ? 'Minha conta' : 'Entrar'}
+                href={user ? '/perfil' : '/entrar'}
+                active={pathname === '/perfil' || pathname === '/entrar'}
+              />
+              <IconButton
+                icon={Settings}
+                label="Configurações"
+                href="/configuracoes"
+                active={pathname === '/configuracoes'}
+              />
             </View>
           </>
         ) : (
@@ -126,6 +145,8 @@ export function Header() {
 }
 
 function NavLink({ item, active, compact }: { item: NavItem; active: boolean; compact: boolean }) {
+  const colors = useColors();
+  const styles = useStyles();
   const { hover, handlers } = useInteraction();
   const underline = useAnimatedStyle(() => ({
     transform: [{ scaleX: active ? 1 : hover.value }],
@@ -140,15 +161,22 @@ function NavLink({ item, active, compact }: { item: NavItem; active: boolean; co
 
   return (
     <Link href={item.href} asChild>
-      <Pressable accessibilityRole="link" accessibilityState={{ selected: active }} {...handlers} style={styles.navItem}>
-        <Animated.Text style={[styles.navLabel, compact && styles.navLabelCompact, label]}>{item.label}</Animated.Text>
+      <Pressable
+        accessibilityRole="link"
+        accessibilityState={{ selected: active }}
+        {...handlers}
+        style={styles.navItem}
+      >
+        <Animated.Text style={[styles.navLabel, compact && styles.navLabelCompact, label]}>
+          {item.label}
+        </Animated.Text>
         <Animated.View style={[styles.navUnderline, underline]} />
       </Pressable>
     </Link>
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   wrapper: {
     position: 'absolute',
     top: 0,
@@ -156,7 +184,6 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 50,
   },
-  tint: { backgroundColor: 'rgba(0,0,0,0.62)' },
   border: {
     position: 'absolute',
     left: 0,
@@ -204,4 +231,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-});
+}));

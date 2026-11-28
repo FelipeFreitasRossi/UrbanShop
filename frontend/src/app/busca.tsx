@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Search, X } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View, type TextStyle } from 'react-native';
+import { Pressable, TextInput, View, type TextStyle } from 'react-native';
 import { Container } from '../components/layout/Container';
 import { Screen } from '../components/layout/Screen';
 import { Section } from '../components/layout/Section';
@@ -9,12 +9,15 @@ import { ProductList } from '../components/product/ProductList';
 import { UText } from '../components/ui/UText';
 import { CATEGORIES } from '../config/navigation';
 import { Reveal } from '../motion/Reveal';
-import { colors, fonts, radius, spacing } from '../theme/tokens';
+import { fonts, radius, spacing } from '../theme/tokens';
+import { makeStyles, useColors } from '../theme/ThemeProvider';
 
 const webInputReset = { outlineStyle: 'none' } as unknown as TextStyle;
 
 /** Pesquisa de produtos. O termo fica na URL (?q=) para poder ser compartilhado. */
 export default function SearchPage() {
+  const colors = useColors();
+  const styles = useStyles();
   const router = useRouter();
   const params = useLocalSearchParams<{ q?: string }>();
   const initial = typeof params.q === 'string' ? params.q : '';
@@ -90,7 +93,10 @@ export default function SearchPage() {
           ) : (
             <View style={styles.results}>
               <UText variant="body" style={styles.resultsTitle}>
-                Resultados para <UText variant="body" color={colors.white}>“{term}”</UText>
+                Resultados para{' '}
+                <UText variant="body" color={colors.white}>
+                  “{term}”
+                </UText>
               </UText>
               <ProductList
                 key={term}
@@ -106,7 +112,7 @@ export default function SearchPage() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   field: {
     marginTop: spacing.md,
     flexDirection: 'row',
@@ -134,4 +140,4 @@ const styles = StyleSheet.create({
   },
   results: { marginTop: spacing.xl },
   resultsTitle: { marginBottom: spacing.lg },
-});
+}));

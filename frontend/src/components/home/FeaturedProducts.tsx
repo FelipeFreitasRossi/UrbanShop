@@ -3,14 +3,19 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { easeOutExpo } from '../../motion/easing';
 import { Reveal } from '../../motion/Reveal';
-import { colors, fonts, spacing } from '../../theme/tokens';
+import { fonts, spacing } from '../../theme/tokens';
 import type { ProductCollection } from '../../types/product';
 import { Container } from '../layout/Container';
 import { Section, SectionHeader } from '../layout/Section';
 import { ProductList } from '../product/ProductList';
+import { makeStyles, useColors } from '../../theme/ThemeProvider';
 
 const TABS: { key: ProductCollection; label: string; empty: string }[] = [
-  { key: 'best-sellers', label: 'Mais vendidos', empty: 'Os mais vendidos aparecem aqui assim que as primeiras vendas forem confirmadas.' },
+  {
+    key: 'best-sellers',
+    label: 'Mais vendidos',
+    empty: 'Os mais vendidos aparecem aqui assim que as primeiras vendas forem confirmadas.',
+  },
   { key: 'new', label: 'Novidades', empty: 'Nenhuma novidade publicada no momento.' },
   { key: 'sale', label: 'Ofertas', empty: 'Nenhuma oferta ativa no momento.' },
   { key: 'recommended', label: 'Recomendados', empty: 'Ainda não há recomendações por aqui.' },
@@ -18,6 +23,7 @@ const TABS: { key: ProductCollection; label: string; empty: string }[] = [
 
 /** Produtos em destaque com abas. Os dados vêm da API — nada é inventado. */
 export function FeaturedProducts() {
+  const styles = useStyles();
   const [active, setActive] = useState<ProductCollection>('best-sellers');
   const tab = TABS.find((t) => t.key === active) ?? TABS[0];
 
@@ -37,7 +43,12 @@ export function FeaturedProducts() {
             accessibilityRole="tablist"
           >
             {TABS.map((t) => (
-              <TabButton key={t.key} label={t.label} active={t.key === active} onPress={() => setActive(t.key)} />
+              <TabButton
+                key={t.key}
+                label={t.label}
+                active={t.key === active}
+                onPress={() => setActive(t.key)}
+              />
             ))}
           </ScrollView>
         </Reveal>
@@ -56,6 +67,8 @@ export function FeaturedProducts() {
 }
 
 function TabButton({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  const colors = useColors();
+  const styles = useStyles();
   const line = useAnimatedStyle(() => ({
     transform: [{ scaleX: withTiming(active ? 1 : 0, { duration: 420, easing: easeOutExpo }) }],
   }));
@@ -75,7 +88,7 @@ function TabButton({ label, active, onPress }: { label: string; active: boolean;
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   tabs: {
     gap: spacing.lg,
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -98,4 +111,4 @@ const styles = StyleSheet.create({
     backgroundColor: colors.gold,
   },
   list: { marginTop: spacing.xl },
-});
+}));

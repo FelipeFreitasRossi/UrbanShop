@@ -27,7 +27,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     name: 'UrbanShop',
     slug: 'urbanshop',
     scheme: 'urbanshop',
-    userInterfaceStyle: 'dark',
+    // 'automatic' permite a opção "Seguir o sistema" em Configurações.
+    userInterfaceStyle: 'automatic',
     backgroundColor: '#000000',
     plugins,
     web: {

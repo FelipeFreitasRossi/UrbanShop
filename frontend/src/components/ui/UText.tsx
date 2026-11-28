@@ -1,7 +1,8 @@
 import React from 'react';
-import { StyleSheet, Text, type TextProps, type TextStyle } from 'react-native';
+import { Text, type TextProps, type TextStyle } from 'react-native';
 import { useBreakpoint } from '../../hooks/useBreakpoint';
-import { colors, fonts } from '../../theme/tokens';
+import { makeStyles } from '../../theme/ThemeProvider';
+import { fonts } from '../../theme/tokens';
 
 export type TextVariant =
   | 'display'
@@ -82,7 +83,7 @@ const sizes: Record<TextVariant, Scale> = {
   },
 };
 
-const base = StyleSheet.create({
+const useBase = makeStyles((colors) => ({
   display: { fontFamily: fonts.display, color: colors.text, textTransform: 'uppercase' },
   h1: { fontFamily: fonts.heading, color: colors.text },
   h2: { fontFamily: fonts.heading, color: colors.text },
@@ -105,7 +106,7 @@ const base = StyleSheet.create({
   },
   caption: { fontFamily: fonts.bodyMedium, color: colors.textDim, letterSpacing: 0.4 },
   price: { fontFamily: fonts.bodyBold, color: colors.text },
-});
+}));
 
 export type UTextProps = TextProps & {
   variant?: TextVariant;
@@ -116,6 +117,7 @@ export type UTextProps = TextProps & {
 /** Texto tipográfico da UrbanShop, com tamanhos responsivos por variante. */
 export function UText({ variant = 'body', color, align, style, ...rest }: UTextProps) {
   const { bp } = useBreakpoint();
+  const base = useBase();
   const key = bp === 'desktop' ? 'd' : bp === 'tablet' ? 't' : 'm';
   const bigHeading = variant === 'display' || variant === 'h1' || variant === 'h2';
 
