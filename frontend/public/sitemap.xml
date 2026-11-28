@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Mapa do site. As páginas de produto serão adicionadas automaticamente na Etapa 3. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://urbanshop.com/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://urbanshop.com/novidades</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://urbanshop.com/masculino</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://urbanshop.com/feminino</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://urbanshop.com/ofertas</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://urbanshop.com/categoria/camisetas</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://urbanshop.com/categoria/shorts</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://urbanshop.com/categoria/tenis</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://urbanshop.com/categoria/bones</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://urbanshop.com/categoria/corta-vento</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://urbanshop.com/categoria/calcas</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://urbanshop.com/institucional/sobre</loc><changefreq>weekly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://urbanshop.com/institucional/trocas-e-devolucoes</loc><changefreq>weekly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://urbanshop.com/institucional/entregas</loc><changefreq>weekly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://urbanshop.com/institucional/privacidade</loc><changefreq>weekly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://urbanshop.com/institucional/termos</loc><changefreq>weekly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://urbanshop.com/institucional/atendimento</loc><changefreq>weekly</changefreq><priority>0.3</priority></url>
+</urlset>

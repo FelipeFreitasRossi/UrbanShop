@@ -1,0 +1,38 @@
+# UrbanShop — configuração Apache (HostGator) para a exportação web estática do Expo.
+# Este arquivo é copiado para a pasta "dist" no "npx expo export -p web".
+
+Options -MultiViews -Indexes
+RewriteEngine On
+
+# Força HTTPS (ative depois que o certificado SSL estiver instalado no domínio).
+# RewriteCond %{HTTPS} off
+# RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# URLs amigáveis: /masculino -> masculino.html
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.html -f
+RewriteRule ^(.+?)/?$ $1.html [L]
+
+# Produtos ainda não pré-gerados: carrega a página dinâmica do produto.
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^produto/([^/]+)/?$ produto/[slug].html [L]
+
+ErrorDocument 404 /+not-found.html
+
+# Cache longo para arquivos com hash (JS, CSS, fontes, imagens do bundle).
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/html "access plus 0 seconds"
+  ExpiresByType application/javascript "access plus 1 year"
+  ExpiresByType text/css "access plus 1 year"
+  ExpiresByType font/ttf "access plus 1 year"
+  ExpiresByType font/woff2 "access plus 1 year"
+  ExpiresByType image/png "access plus 1 month"
+  ExpiresByType image/jpeg "access plus 1 month"
+  ExpiresByType image/webp "access plus 1 month"
+</IfModule>
+
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json image/svg+xml
+</IfModule>

@@ -1,0 +1,33 @@
+# ---- Segredos (nunca enviar ao GitHub) ----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ---- Node / Expo ----
+node_modules/
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+npm-debug.*
+*.log
+
+# ---- Java / Spring Boot ----
+backend/**/target/
+backend/**/.mvn/wrapper/maven-wrapper.jar
+*.class
+
+# ---- Python ----
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# ---- IDEs e sistema ----
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
