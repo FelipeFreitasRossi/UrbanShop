@@ -13,7 +13,7 @@ import { useFavorites } from '../state/favorites';
 import { spacing } from '../theme/tokens';
 
 export default function FavoritesPage() {
-  const { items } = useFavorites();
+  const { items, enabled } = useFavorites();
   const { pick } = useBreakpoint();
   const cols = pick(2, 3, 4);
   const gap = pick(12, 20, 24);
@@ -31,7 +31,14 @@ export default function FavoritesPage() {
             </UText>
           </Reveal>
 
-          {items.length === 0 ? (
+          {!enabled ? (
+            <EmptyState
+              icon={Heart}
+              title="Entre para ver seus favoritos"
+              message="Curtir produtos é exclusivo para clientes cadastrados. Crie sua conta grátis em menos de 2 minutos."
+              action={{ label: 'Criar conta', href: '/cadastro' }}
+            />
+          ) : items.length === 0 ? (
             <EmptyState
               icon={Heart}
               title="Nenhum favorito ainda"
@@ -45,9 +52,7 @@ export default function FavoritesPage() {
                   key={p.id}
                   style={{ width: `${100 / cols}%` as `${number}%`, paddingHorizontal: gap / 2 }}
                 >
-                  <Reveal delay={(i % cols) * 80}>
-                    <ProductCard product={p} />
-                  </Reveal>
+                  <ProductCard product={p} index={i % cols} />
                 </View>
               ))}
             </View>

@@ -1,41 +1,53 @@
 import { Link, usePathname } from 'expo-router';
 import { Heart, Menu, Search, Settings, ShoppingBag, User } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   Extrapolation,
   interpolate,
   interpolateColor,
+  useAnimatedReaction,
   useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MAIN_NAV, type NavItem } from '../../config/navigation';
 import { useBreakpoint } from '../../hooks/useBreakpoint';
+import { FlyTargetView } from '../../motion/FlyTargetView';
 import { usePageScroll } from '../../motion/PageScroll';
 import { useInteraction } from '../../motion/useInteraction';
 import { useAuth } from '../../state/auth';
+import { useCart } from '../../state/cart';
 import { useFavorites } from '../../state/favorites';
 import { fonts, layout } from '../../theme/tokens';
 import { isActivePath } from '../../utils/path';
 import { Logo } from '../brand/Logo';
 import { GlassBackground } from '../ui/GlassBackground';
 import { IconButton } from '../ui/IconButton';
+import { GUEST_BANNER_HEIGHT, GuestBanner, useGuestBannerVisible } from './GuestBanner';
 import { MobileMenu } from './MobileMenu';
 import { makeStyles, useColors, useTheme } from '../../theme/ThemeProvider';
 
-/** Altura total ocupada pelo header (inclui a área segura do topo no celular). */
 /** Largura mínima para exibir todos os links do menu no header. */
 const FULL_NAV_MIN_WIDTH = 1200;
 
+/** Altura total ocupada pelo header (área segura do topo + faixa de cadastro + barra). */
 export function useHeaderHeight() {
   const { width } = useBreakpoint();
   const insets = useSafeAreaInsets();
-  return width >= FULL_NAV_MIN_WIDTH ? layout.headerHeightDesktop : layout.headerHeightMobile + insets.top;
+  const banner = useGuestBannerVisible() ? GUEST_BANNER_HEIGHT : 0;
+  return width >= FULL_NAV_MIN_WIDTH
+    ? layout.headerHeightDesktop + banner
+    : layout.headerHeightMobile + insets.top + banner;
 }
 
 /**
- * Header fixo. Começa transparente e, ao rolar, ganha fundo preto
- * translúcido com desfoque (blur) e uma linha inferior sutil.
+ * Smart Sticky Header:
+ * - começa transparente sobre a foto e ganha fundo com desfoque ao rolar;
+ * - some ao rolar para baixo (mais espaço para os produtos) e volta ao rolar para cima;
+ * - para visitantes, mostra a faixa dourada "Cadastre-se".
  */
 export function Header() {
   const styles = useStyles();
@@ -45,7 +57,10 @@ export function Header() {
   const { scrollY } = usePageScroll();
   const insets = useSafeAreaInsets();
   const favorites = useFavorites();
+  const cart = useCart();
   const { user } = useAuth();
+  const showBanner = useGuestBannerVisible();
+  const reduce = useReducedMotion();
   const pathname = usePathname();
   const height = useHeaderHeight();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -59,18 +74,54 @@ export function Header() {
     opacity: interpolate(scrollY.value, [60, 200], [0, 1], Extrapolation.CLAMP),
   }));
 
+  // ---- Esconde ao rolar para baixo, mostra ao rolar para cima ----
+  const hidden = useSharedValue(0);
+  const target = useSharedValue(0);
+  const setHidden = (value: number) => {
+    'worklet';
+    if (target.value === value) return;
+    target.value = value;
+    hidden.value = withTiming(value, { duration: 280 });
+  };
+  useAnimatedReaction(
+    () => scrollY.value,
+    (y, prev) => {
+      if (prev === null || reduce) return;
+      const dy = y - prev;
+      if (y < 120) setHidden(0);
+      else if (dy > 8) setHidden(1);
+      else if (dy < -8) setHidden(0);
+    },
+  );
+  // Ao curtir ou adicionar à sacola, o header aparece para mostrar o ícone recebendo a peça.
+  useEffect(() => {
+    target.set(0);
+    hidden.set(withTiming(0, { duration: 200 }));
+  }, [cart.count, favorites.count, menuOpen, hidden, target]);
+
+  const slide = useAnimatedStyle(() => ({
+    transform: [{ translateY: -hidden.value * (height + 4) }],
+  }));
+
+  const barHeight = isDesktop ? layout.headerHeightDesktop : layout.headerHeightMobile;
+
   return (
-    <View style={[styles.wrapper, { height }]} pointerEvents="box-none">
+    <Animated.View
+      style={[styles.wrapper, { height, paddingTop: isDesktop ? 0 : insets.top }, slide]}
+      pointerEvents="box-none"
+    >
       <Animated.View style={[StyleSheet.absoluteFill, backdrop]} pointerEvents="none">
         <GlassBackground tint={0.62} intensity={40} />
       </Animated.View>
       <Animated.View style={[styles.border, border]} pointerEvents="none" />
 
+      {showBanner ? <GuestBanner /> : null}
+
       <View
         style={[
           styles.bar,
           {
-            paddingTop: isDesktop ? 0 : insets.top,
+            height: barHeight,
             paddingHorizontal: isDesktop ? (roomy ? 48 : 28) : 12,
           },
         ]}
@@ -90,19 +141,24 @@ export function Header() {
             </View>
             <View style={styles.actions}>
               <IconButton icon={Search} label="Pesquisar" href="/busca" active={pathname === '/busca'} />
-              <IconButton
-                icon={Heart}
-                label={`Favoritos (${favorites.count})`}
-                href="/favoritos"
-                badge={favorites.count}
-                active={pathname === '/favoritos'}
-              />
-              <IconButton
-                icon={ShoppingBag}
-                label="Sacola"
-                href="/carrinho"
-                active={pathname === '/carrinho'}
-              />
+              <FlyTargetView name="wishlist" priority={1}>
+                <IconButton
+                  icon={Heart}
+                  label={`Favoritos (${favorites.count})`}
+                  href="/favoritos"
+                  badge={favorites.count}
+                  active={pathname === '/favoritos'}
+                />
+              </FlyTargetView>
+              <FlyTargetView name="cart" priority={1}>
+                <IconButton
+                  icon={ShoppingBag}
+                  label={`Sacola (${cart.count})`}
+                  href="/carrinho"
+                  badge={cart.count}
+                  active={pathname === '/carrinho'}
+                />
+              </FlyTargetView>
               <IconButton
                 icon={User}
                 label={user ? 'Minha conta' : 'Entrar'}
@@ -126,21 +182,30 @@ export function Header() {
             <View style={styles.actions}>
               <IconButton icon={Search} label="Pesquisar" href="/busca" />
               {!isMobile ? (
-                <IconButton
-                  icon={Heart}
-                  label={`Favoritos (${favorites.count})`}
-                  href="/favoritos"
-                  badge={favorites.count}
-                />
+                <FlyTargetView name="wishlist" priority={1}>
+                  <IconButton
+                    icon={Heart}
+                    label={`Favoritos (${favorites.count})`}
+                    href="/favoritos"
+                    badge={favorites.count}
+                  />
+                </FlyTargetView>
               ) : null}
-              <IconButton icon={ShoppingBag} label="Sacola" href="/carrinho" />
+              <FlyTargetView name="cart" priority={1}>
+                <IconButton
+                  icon={ShoppingBag}
+                  label={`Sacola (${cart.count})`}
+                  href="/carrinho"
+                  badge={cart.count}
+                />
+              </FlyTargetView>
             </View>
           </>
         )}
       </View>
 
       {!isDesktop ? <MobileMenu visible={menuOpen} onClose={() => setMenuOpen(false)} /> : null}
-    </View>
+    </Animated.View>
   );
 }
 
@@ -193,7 +258,6 @@ const useStyles = makeStyles((colors) => ({
     backgroundColor: colors.line,
   },
   bar: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

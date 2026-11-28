@@ -20,6 +20,8 @@ export function sized(url: string, width: number) {
 
 export const media = {
   hero: unsplash('photo-1523398002811-999ca8dec234', 2000),
+  /** Foto em moldura exibida ao lado do título "Vista a cidade". */
+  heroFeature: unsplash('photo-1635650804263-1a1941e14df5', 900),
 
   categories: {
     camisetas: unsplash('photo-1627225924765-552d49cf47ad', 800),

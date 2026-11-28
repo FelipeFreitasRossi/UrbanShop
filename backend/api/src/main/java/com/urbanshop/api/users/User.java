@@ -26,14 +26,14 @@ public class User {
 
     private String name;
 
-    @Indexed(unique = true)
+    @Indexed(name = "email_1", unique = true)
     private String email;
 
     private String phone;
 
     private String cpfEncrypted;
 
-    @Indexed(unique = true, sparse = true)
+    @Indexed(name = "cpfFingerprint_1", unique = true, sparse = true)
     private String cpfFingerprint;
 
     private LocalDate birthDate;
@@ -55,7 +55,7 @@ public class User {
 
     private Instant lastLoginAt;
 
-    @Indexed
+    @Indexed(name = "createdAt_1")
     private Instant createdAt;
 
     private Instant updatedAt;

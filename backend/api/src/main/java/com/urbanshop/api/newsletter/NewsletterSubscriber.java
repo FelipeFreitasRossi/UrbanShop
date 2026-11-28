@@ -13,7 +13,7 @@ public class NewsletterSubscriber {
     @Id
     private String id;
 
-    @Indexed(unique = true)
+    @Indexed(name = "email_1", unique = true)
     private String email;
 
     private String source;

@@ -18,16 +18,16 @@ public class AuthToken {
     @Id
     private String id;
 
-    @Indexed
+    @Indexed(name = "userId_1")
     private String userId;
 
     private Type type;
 
-    @Indexed(unique = true)
+    @Indexed(name = "tokenHash_1", unique = true)
     private String tokenHash;
 
     /** Índice TTL: o documento é removido automaticamente após esta data. */
-    @Indexed(expireAfterSeconds = 0)
+    @Indexed(name = "expiresAt_1", expireAfterSeconds = 0)
     private Instant expiresAt;
 
     private Instant usedAt;

@@ -16,7 +16,7 @@ public class Address {
     @Id
     private String id;
 
-    @Indexed
+    @Indexed(name = "userId_1")
     private String userId;
 
     private String label;

@@ -1,13 +1,12 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { Platform } from 'react-native';
+import React, { createContext, useCallback, useContext, useMemo } from 'react';
 import type { Product } from '../types/product';
+import { useAuth } from './auth';
+import { usePersistentState } from './usePersistentState';
 
 /**
- * Favoritos do visitante.
- *
- * Nesta etapa ficam salvos no próprio dispositivo (no navegador, via
- * localStorage). Na Etapa 4, com login, passam a ser sincronizados com a
- * conta do cliente pela API.
+ * Favoritos (lista de desejos) — somente para clientes cadastrados.
+ * Ficam salvos no aparelho, separados por conta. Na etapa de produtos
+ * passam a ser sincronizados com a conta pela API.
  */
 export type FavoriteItem = Pick<
   Product,
@@ -17,62 +16,49 @@ export type FavoriteItem = Pick<
 type FavoritesContextValue = {
   items: FavoriteItem[];
   count: number;
+  /** false para visitantes: curtir exige cadastro. */
+  enabled: boolean;
   isFavorite: (id: string) => boolean;
-  toggle: (item: FavoriteItem) => void;
+  /** Retorna true se o produto passou a ser favorito. */
+  toggle: (item: FavoriteItem) => boolean;
   remove: (id: string) => void;
 };
 
-const STORAGE_KEY = 'urbanshop:favorites:v1';
 const FavoritesContext = createContext<FavoritesContextValue | null>(null);
 
-function readStorage(): FavoriteItem[] {
-  if (Platform.OS !== 'web') return [];
-  try {
-    const raw = globalThis.localStorage?.getItem(STORAGE_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeStorage(items: FavoriteItem[]) {
-  if (Platform.OS !== 'web') return;
-  try {
-    globalThis.localStorage?.setItem(STORAGE_KEY, JSON.stringify(items));
-  } catch {
-    // Armazenamento indisponível (modo privado, cota cheia): segue só em memória.
-  }
-}
-
 export function FavoritesProvider({ children }: { children: React.ReactNode }) {
-  const [items, setItems] = useState<FavoriteItem[]>([]);
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    setItems(readStorage());
-    setLoaded(true);
-  }, []);
-
-  useEffect(() => {
-    if (loaded) writeStorage(items);
-  }, [items, loaded]);
+  const { user } = useAuth();
+  const [items, setItems] = usePersistentState<FavoriteItem[]>(
+    user ? `urbanshop.favorites.${user.id}` : null,
+    [],
+  );
 
   const isFavorite = useCallback((id: string) => items.some((i) => i.id === id), [items]);
 
-  const toggle = useCallback((item: FavoriteItem) => {
-    setItems((prev) =>
-      prev.some((i) => i.id === item.id) ? prev.filter((i) => i.id !== item.id) : [item, ...prev],
-    );
-  }, []);
+  const toggle = useCallback(
+    (item: FavoriteItem) => {
+      if (!user) return false;
+      const exists = items.some((i) => i.id === item.id);
+      const minimal: FavoriteItem = {
+        id: item.id,
+        slug: item.slug,
+        name: item.name,
+        images: item.images.slice(0, 2),
+        price: item.price,
+        promotionalPrice: item.promotionalPrice,
+        category: item.category,
+      };
+      setItems((prev) => (exists ? prev.filter((i) => i.id !== item.id) : [minimal, ...prev]));
+      return !exists;
+    },
+    [items, user, setItems],
+  );
 
-  const remove = useCallback((id: string) => {
-    setItems((prev) => prev.filter((i) => i.id !== id));
-  }, []);
+  const remove = useCallback((id: string) => setItems((prev) => prev.filter((i) => i.id !== id)), [setItems]);
 
   const value = useMemo(
-    () => ({ items, count: items.length, isFavorite, toggle, remove }),
-    [items, isFavorite, toggle, remove],
+    () => ({ items, count: items.length, enabled: !!user, isFavorite, toggle, remove }),
+    [items, user, isFavorite, toggle, remove],
   );
 
   return <FavoritesContext.Provider value={value}>{children}</FavoritesContext.Provider>;

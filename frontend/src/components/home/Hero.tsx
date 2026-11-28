@@ -17,19 +17,22 @@ import { media, sized } from '../../config/media';
 import { useBreakpoint } from '../../hooks/useBreakpoint';
 import { easeInOut, easeOutExpo } from '../../motion/easing';
 import { usePageScroll } from '../../motion/PageScroll';
-import { spacing } from '../../theme/tokens';
+import { OnDark, makeStyles, useColors } from '../../theme/ThemeProvider';
+import { fonts, spacing } from '../../theme/tokens';
 import { Container } from '../layout/Container';
 import { useHeaderHeight } from '../layout/Header';
 import { Button } from '../ui/Button';
 import { UText } from '../ui/UText';
-import { OnDark, makeStyles, useColors } from '../../theme/ThemeProvider';
 
 /**
- * Hero da home: foto em tela cheia com parallax e zoom, gradiente escuro,
- * título com entrada escalonada e indicador de rolagem.
+ * Cinematic Hero:
+ * - foto em tela cheia com movimento lento contínuo (Ken Burns) e parallax ao rolar;
+ * - camadas de degradê (topo, base, laterais e um brilho dourado sutil);
+ * - título "Vista a cidade" revelado linha a linha, como em abertura de filme;
+ * - foto em moldura ao lado do título, com parallax próprio.
+ * Fica sempre escura (texto claro sobre a foto), em qualquer tema.
  */
 export function Hero() {
-  // A Hero fica sempre escura (texto claro sobre foto), em qualquer tema.
   return (
     <OnDark>
       <HeroContent />
@@ -44,24 +47,31 @@ function HeroContent() {
   const { scrollY, scrollToAnchor, reduceMotion } = usePageScroll();
   const headerHeight = useHeaderHeight();
 
-  const heroHeight = Math.max(pick(560, 640, 680), Math.min(height * (isMobile ? 0.9 : 1), 1100));
+  const heroHeight = Math.max(pick(600, 660, 700), Math.min(height * (isMobile ? 0.92 : 1), 1100));
+  const lineHeight = pick(46, 72, 102);
 
-  // Entrada: imagem faz "zoom out" e os textos sobem em sequência.
+  // Entrada (0 → 1) e movimento contínuo da foto (Ken Burns).
   const intro = useSharedValue(reduceMotion ? 1 : 0);
+  const kenBurns = useSharedValue(0);
   useEffect(() => {
-    if (!reduceMotion) intro.set(withDelay(150, withTiming(1, { duration: 1800, easing: easeOutExpo })));
-  }, [intro, reduceMotion]);
+    if (reduceMotion) return;
+    intro.set(withDelay(150, withTiming(1, { duration: 2200, easing: easeOutExpo })));
+    kenBurns.set(withRepeat(withTiming(1, { duration: 20000, easing: easeInOut }), -1, true));
+  }, [intro, kenBurns, reduceMotion]);
 
   const imageStyle = useAnimatedStyle(() => {
     if (reduceMotion) return {};
     const y = scrollY.value;
     return {
+      opacity: interpolate(intro.value, [0, 0.25], [0, 1], Extrapolation.CLAMP),
       transform: [
         { translateY: interpolate(y, [0, heroHeight], [0, heroHeight * 0.35], Extrapolation.CLAMP) },
+        { translateX: interpolate(kenBurns.value, [0, 1], [0, -18]) },
         {
           scale:
-            interpolate(intro.value, [0, 1], [1.18, 1.04]) +
-            interpolate(y, [0, heroHeight], [0, 0.12], Extrapolation.CLAMP),
+            interpolate(intro.value, [0, 1], [1.2, 1.04]) +
+            kenBurns.value * 0.06 +
+            interpolate(y, [0, heroHeight], [0, 0.1], Extrapolation.CLAMP),
         },
       ],
     };
@@ -80,7 +90,7 @@ function HeroContent() {
 
   return (
     <View style={[styles.hero, { height: heroHeight }]} accessibilityRole="header">
-      <Animated.View style={[styles.imageWrap, imageStyle]}>
+      <Animated.View style={[StyleSheet.absoluteFill, imageStyle]}>
         <Image
           source={{ uri: sized(media.hero, pick(900, 1400, 2000)) }}
           style={StyleSheet.absoluteFill}
@@ -92,23 +102,39 @@ function HeroContent() {
         />
       </Animated.View>
 
+      {/* Camadas de degradê cinematográfico */}
       <LinearGradient
-        colors={['rgba(0,0,0,0.55)', 'rgba(0,0,0,0.05)', 'rgba(0,0,0,0.55)', colors.black]}
-        locations={[0, 0.35, 0.72, 1]}
+        colors={['rgba(0,0,0,0.7)', 'rgba(0,0,0,0)']}
+        locations={[0, 0.32]}
         style={StyleSheet.absoluteFill}
         pointerEvents="none"
       />
       <LinearGradient
-        colors={['rgba(0,0,0,0.6)', 'rgba(0,0,0,0)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0.8, y: 0 }}
+        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.55)', '#000000']}
+        locations={[0.45, 0.78, 1]}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
+      <LinearGradient
+        colors={['rgba(0,0,0,0.65)', 'rgba(0,0,0,0)']}
+        start={{ x: 0, y: 0.5 }}
+        end={{ x: 0.7, y: 0.5 }}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
+      <LinearGradient
+        colors={['rgba(200,167,94,0.22)', 'rgba(200,167,94,0)']}
+        start={{ x: 1, y: 0 }}
+        end={{ x: 0.45, y: 0.55 }}
         style={StyleSheet.absoluteFill}
         pointerEvents="none"
       />
 
+      <FeatureImage intro={intro} heroHeight={heroHeight} headerHeight={headerHeight} />
+
       <Animated.View style={[styles.content, { paddingTop: headerHeight }, contentStyle]}>
         <Container>
-          <View style={{ maxWidth: pick(520, 680, 860) }}>
+          <View style={{ maxWidth: pick(520, 420, 600) }}>
             <IntroItem index={0} intro={intro}>
               <View style={styles.eyebrowRow}>
                 <View style={styles.eyebrowLine} />
@@ -116,17 +142,23 @@ function HeroContent() {
               </View>
             </IntroItem>
 
-            <IntroItem index={1} intro={intro}>
-              <UText variant="display" accessibilityRole="header">
-                Vista a{'\n'}cidade
-                <UText variant="display" color={colors.gold}>
-                  .
+            <View accessible accessibilityRole="header" accessibilityLabel="Vista a cidade.">
+              <MaskLine intro={intro} start={0.12} height={lineHeight}>
+                <UText variant="display">Vista a</UText>
+              </MaskLine>
+              <MaskLine intro={intro} start={0.22} height={lineHeight}>
+                <UText variant="display">
+                  cidade
+                  <UText variant="display" color={colors.gold}>
+                    .
+                  </UText>
                 </UText>
-              </UText>
-            </IntroItem>
+              </MaskLine>
+              <GoldSweep intro={intro} />
+            </View>
 
             <IntroItem index={2} intro={intro}>
-              <UText variant="bodyLg" style={[styles.lead, { maxWidth: pick(360, 480, 520) }]}>
+              <UText variant="bodyLg" style={[styles.lead, { maxWidth: pick(360, 440, 500) }]}>
                 A UrbanShop une streetwear essencial, corte preciso e materiais pensados para o ritmo da rua.
                 Peças feitas para durar e para serem notadas.
               </UText>
@@ -158,6 +190,101 @@ function HeroContent() {
       {!isMobile ? <ScrollCue /> : null}
     </View>
   );
+}
+
+/** Foto em moldura ao lado do título, com revelação de baixo para cima e parallax. */
+function FeatureImage({
+  intro,
+  heroHeight,
+  headerHeight,
+}: {
+  intro: SharedValue<number>;
+  heroHeight: number;
+  headerHeight: number;
+}) {
+  const styles = useStyles();
+  const { isMobile, pick, height: screenHeight } = useBreakpoint();
+  const { scrollY, reduceMotion } = usePageScroll();
+  const width = pick(120, 220, 320);
+  const imageHeight = width * 1.3;
+
+  const frame = useAnimatedStyle(() => {
+    const p = interpolate(intro.value, [0.3, 0.85], [0, 1], Extrapolation.CLAMP);
+    const y = reduceMotion ? 0 : scrollY.value;
+    return {
+      opacity: p,
+      transform: [
+        { translateY: interpolate(p, [0, 1], [40, 0]) - y * 0.12 },
+        { rotate: `${interpolate(p, [0, 1], [-4, 0])}deg` },
+      ],
+    };
+  });
+  const curtain = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateY: -interpolate(intro.value, [0.35, 0.95], [0, 1], Extrapolation.CLAMP) * (imageHeight + 4),
+      },
+    ],
+  }));
+
+  // No celular só aparece em telas altas, para não cobrir o título.
+  if (isMobile && screenHeight < 800) return null;
+
+  const position = isMobile
+    ? { top: headerHeight + 16, right: 20 }
+    : { top: Math.max(headerHeight + 40, heroHeight * 0.18), right: pick(20, 32, 64) };
+
+  return (
+    <Animated.View pointerEvents="none" style={[styles.feature, position, { width }, frame]}>
+      <View style={[styles.featureOffset, { width, height: imageHeight }]} />
+      <View style={[styles.featureImage, { width, height: imageHeight }]}>
+        <Image
+          source={{ uri: sized(media.heroFeature, width * 2) }}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          transition={500}
+          accessibilityLabel="Jovem de boné em visual streetwear"
+        />
+        <Animated.View style={[StyleSheet.absoluteFill, styles.featureCurtain, curtain]} />
+      </View>
+      <View style={styles.featureCaption}>
+        <View style={styles.captionDot} />
+        <UText style={styles.captionText}>Coleção urbana</UText>
+      </View>
+    </Animated.View>
+  );
+}
+
+/** Linha de título que sobe de dentro de uma "máscara" (abertura de filme). */
+function MaskLine({
+  intro,
+  start,
+  height,
+  children,
+}: {
+  intro: SharedValue<number>;
+  start: number;
+  height: number;
+  children: React.ReactNode;
+}) {
+  const style = useAnimatedStyle(() => {
+    const p = interpolate(intro.value, [start, start + 0.35], [0, 1], Extrapolation.CLAMP);
+    return { transform: [{ translateY: (1 - p) * height * 1.1 }] };
+  });
+  return (
+    <View style={{ overflow: 'hidden', height: height * 1.05 }}>
+      <Animated.View style={style}>{children}</Animated.View>
+    </View>
+  );
+}
+
+/** Traço dourado que "varre" sob o título depois que ele aparece. */
+function GoldSweep({ intro }: { intro: SharedValue<number> }) {
+  const styles = useStyles();
+  const style = useAnimatedStyle(() => ({
+    transform: [{ scaleX: interpolate(intro.value, [0.45, 0.8], [0, 1], Extrapolation.CLAMP) }],
+  }));
+  return <Animated.View style={[styles.sweep, style]} />;
 }
 
 function IntroItem({
@@ -211,19 +338,50 @@ function ScrollCue() {
 
 const useStyles = makeStyles((colors) => ({
   hero: { width: '100%', overflow: 'hidden', backgroundColor: colors.black },
-  imageWrap: { ...StyleSheet.absoluteFillObject },
-  content: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    paddingBottom: spacing.huge,
-  },
+  content: { flex: 1, justifyContent: 'flex-end', paddingBottom: spacing.huge },
   eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: spacing.lg },
   eyebrowLine: { width: 32, height: 1, backgroundColor: colors.gold },
-  lead: { marginTop: spacing.lg, color: 'rgba(244,243,239,0.78)' },
+  sweep: {
+    height: 2,
+    width: 120,
+    marginTop: spacing.sm,
+    backgroundColor: colors.gold,
+    transformOrigin: 'left',
+  },
+  lead: { marginTop: spacing.lg, color: 'rgba(244,243,239,0.82)' },
   actions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xl, flexWrap: 'wrap' },
   actionsMobile: { flexDirection: 'column', alignItems: 'stretch' },
-  cue: { position: 'absolute', right: 48, bottom: 48, alignItems: 'center', gap: 12 },
+  feature: { position: 'absolute' },
+  featureOffset: {
+    position: 'absolute',
+    top: 14,
+    left: 14,
+    borderWidth: 1,
+    borderColor: colors.goldLine,
+    borderRadius: 4,
+  },
+  featureImage: { borderRadius: 4, overflow: 'hidden', backgroundColor: colors.surface },
+  featureCurtain: { backgroundColor: colors.black },
+  featureCaption: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 22 },
+  captionDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.gold },
+  captionText: {
+    fontFamily: fonts.bodySemiBold,
+    fontSize: 11,
+    lineHeight: 14,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    color: colors.textMuted,
+  },
+  cue: {
+    position: 'absolute',
+    left: '50%',
+    bottom: 28,
+    marginLeft: -20,
+    width: 40,
+    alignItems: 'center',
+    gap: 10,
+  },
   cueText: { textTransform: 'uppercase', letterSpacing: 3 },
-  cueTrack: { width: 1, height: 80, overflow: 'hidden', backgroundColor: colors.line },
-  cueLine: { width: 1, height: 40, backgroundColor: colors.gold },
+  cueTrack: { width: 1, height: 60, overflow: 'hidden', backgroundColor: colors.line },
+  cueLine: { width: 1, height: 30, backgroundColor: colors.gold },
 }));

@@ -3,7 +3,6 @@ import React, { useEffect, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useBreakpoint } from '../../hooks/useBreakpoint';
 import { useRequest } from '../../hooks/useRequest';
-import { Reveal } from '../../motion/Reveal';
 import { ApiError, friendlyError } from '../../services/api';
 import { listProducts, type ProductQuery } from '../../services/products';
 import { spacing } from '../../theme/tokens';
@@ -152,13 +151,7 @@ function Grid({ items, columns }: { items: (Product | null)[]; columns: Columns 
           key={p?.id ?? `s${i}`}
           style={{ width: `${100 / cols}%` as `${number}%`, paddingHorizontal: gap / 2 }}
         >
-          {p ? (
-            <Reveal delay={(i % cols) * 80} distance={20}>
-              <ProductCard product={p} />
-            </Reveal>
-          ) : (
-            <ProductSkeleton />
-          )}
+          {p ? <ProductCard product={p} index={i % cols} /> : <ProductSkeleton />}
         </View>
       ))}
     </View>
@@ -183,7 +176,7 @@ function Carousel({ items }: { items: (Product | null)[] }) {
     >
       {items.map((p, i) => (
         <View key={p?.id ?? `s${i}`} style={{ width: itemWidth }}>
-          {p ? <ProductCard product={p} /> : <ProductSkeleton />}
+          {p ? <ProductCard product={p} index={Math.min(i, 3)} /> : <ProductSkeleton />}
         </View>
       ))}
     </ScrollView>

@@ -20,11 +20,11 @@ public class LoyaltyCard {
     @Id
     private String id;
 
-    @Indexed(unique = true)
+    @Indexed(name = "userId_1", unique = true)
     private String userId;
 
     /** Número exibido no cartão (ex.: URB-4821-9930-1174). */
-    @Indexed(unique = true)
+    @Indexed(name = "cardNumber_1", unique = true)
     private String cardNumber;
 
     private LoyaltyTier tier = LoyaltyTier.URBAN_BASIC;

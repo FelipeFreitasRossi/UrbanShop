@@ -26,11 +26,6 @@ type CatalogScreenProps = {
   emptyMessage?: string;
 };
 
-/**
- * Página de listagem (categoria, masculino, feminino, ofertas, novidades):
- * banner com parallax e grade de produtos carregados da API.
- * Filtros, ordenação e paginação completos chegam na Etapa 3.
- */
 export function CatalogScreen({
   title,
   eyebrow,

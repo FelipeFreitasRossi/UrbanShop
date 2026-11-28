@@ -15,6 +15,47 @@ import { useContentPosition } from './useContentPosition';
 
 export type RevealVariant = 'fade' | 'up' | 'down' | 'left' | 'right' | 'zoom';
 
+/**
+ * Progresso 0 → 1 de um elemento quando ele entra na área visível.
+ * A verificação roda na UI thread (sem custo de JavaScript durante a rolagem).
+ * Com "reduzir movimento" (ou fora de uma página), começa em 1.
+ */
+export function useRevealProgress({
+  delay = 0,
+  duration = durations.reveal,
+  threshold = 0.92,
+}: { delay?: number; duration?: number; threshold?: number } = {}) {
+  const { scrollY, viewportH, reduceMotion, active } = usePageScroll();
+  const skip = reduceMotion || !active;
+  const { ref, top, measure } = useContentPosition(!skip);
+  const progress = useSharedValue(skip ? 1 : 0);
+  const done = useSharedValue(skip ? 1 : 0);
+
+  useAnimatedReaction(
+    () => top.value >= 0 && viewportH.value > 0 && scrollY.value + viewportH.value * threshold > top.value,
+    (visible) => {
+      if (visible && done.get() === 0) {
+        done.set(1);
+        progress.set(withDelay(delay, withTiming(1, { duration, easing: easeOutExpo })));
+      }
+    },
+  );
+
+  // Segurança: se a medição falhar, o conteúdo aparece mesmo assim.
+  useEffect(() => {
+    if (skip) return;
+    const t = setTimeout(() => {
+      if (top.get() < 0 && done.get() === 0) {
+        done.set(1);
+        progress.set(withTiming(1, { duration: 300 }));
+      }
+    }, 2500);
+    return () => clearTimeout(t);
+  }, [skip, top, done, progress]);
+
+  return { ref, onLayout: skip ? undefined : measure, progress, skip };
+}
+
 type RevealProps = {
   children: React.ReactNode;
   variant?: RevealVariant;
@@ -28,11 +69,7 @@ type RevealProps = {
   style?: StyleProp<ViewStyle>;
 };
 
-/**
- * Reveal on Scroll: o conteúdo aparece quando entra na área visível.
- * A verificação roda na UI thread (sem custo de JavaScript durante a rolagem).
- * Respeita "reduzir movimento" (aparece direto, sem deslocamento).
- */
+/** Reveal on Scroll: o conteúdo aparece quando entra na área visível. */
 export function Reveal({
   children,
   variant = 'up',
@@ -42,36 +79,10 @@ export function Reveal({
   threshold = 0.92,
   style,
 }: RevealProps) {
-  const { scrollY, viewportH, reduceMotion, active } = usePageScroll();
-  const skip = reduceMotion || !active;
-  const { ref, top, measure } = useContentPosition(!skip);
-  const shown = useSharedValue(skip ? 1 : 0);
-  const done = useSharedValue(skip ? 1 : 0);
-
-  useAnimatedReaction(
-    () => top.value >= 0 && viewportH.value > 0 && scrollY.value + viewportH.value * threshold > top.value,
-    (visible) => {
-      if (visible && done.get() === 0) {
-        done.set(1);
-        shown.set(withDelay(delay, withTiming(1, { duration, easing: easeOutExpo })));
-      }
-    },
-  );
-
-  // Segurança: se a medição falhar, o conteúdo aparece mesmo assim.
-  useEffect(() => {
-    if (skip) return;
-    const t = setTimeout(() => {
-      if (top.get() < 0 && done.get() === 0) {
-        done.set(1);
-        shown.set(withTiming(1, { duration: 300 }));
-      }
-    }, 2500);
-    return () => clearTimeout(t);
-  }, [skip, top, done, shown]);
+  const { ref, onLayout, progress, skip } = useRevealProgress({ delay, duration, threshold });
 
   const animatedStyle = useAnimatedStyle(() => {
-    const p = shown.value;
+    const p = progress.value;
     const d = (1 - p) * distance;
     switch (variant) {
       case 'up':
@@ -94,7 +105,7 @@ export function Reveal({
   }
 
   return (
-    <View ref={ref} collapsable={false} onLayout={measure} style={style}>
+    <View ref={ref} collapsable={false} onLayout={onLayout} style={style}>
       <Animated.View style={animatedStyle}>{children}</Animated.View>
     </View>
   );

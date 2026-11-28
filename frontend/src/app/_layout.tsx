@@ -18,8 +18,12 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { SplashOverlay } from '../components/brand/SplashOverlay';
 import { BreakpointProvider } from '../hooks/useBreakpoint';
+import { FlyProvider } from '../motion/FlyLayer';
 import { AuthProvider } from '../state/auth';
+import { AuthPromptProvider } from '../state/authPrompt';
+import { CartProvider } from '../state/cart';
 import { FavoritesProvider } from '../state/favorites';
+import { QuickAddProvider } from '../state/quickAdd';
 import { QuickViewProvider } from '../state/quickView';
 import { ThemeProvider, useTheme } from '../theme/ThemeProvider';
 
@@ -32,9 +36,18 @@ export default function RootLayout() {
       <BreakpointProvider>
         <AuthProvider>
           <FavoritesProvider>
-            <QuickViewProvider>
-              <AppShell />
-            </QuickViewProvider>
+            <CartProvider>
+              {/* Camadas sobre o app: voo das peças > convite de cadastro > compra rápida. */}
+              <FlyProvider>
+                <AuthPromptProvider>
+                  <QuickViewProvider>
+                    <QuickAddProvider>
+                      <AppShell />
+                    </QuickAddProvider>
+                  </QuickViewProvider>
+                </AuthPromptProvider>
+              </FlyProvider>
+            </CartProvider>
           </FavoritesProvider>
         </AuthProvider>
       </BreakpointProvider>
@@ -79,7 +92,9 @@ function AppShell() {
           screenOptions={{
             headerShown: false,
             contentStyle: { backgroundColor: colors.black },
-            animation: 'fade',
+            // Transição suave entre páginas: a nova página sobe levemente enquanto aparece.
+            animation: 'fade_from_bottom',
+            animationDuration: 320,
           }}
         />
       ) : null}

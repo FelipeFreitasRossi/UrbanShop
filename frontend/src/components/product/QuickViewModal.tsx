@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Heart, X } from 'lucide-react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -24,6 +24,10 @@ import { useBreakpoint } from '../../hooks/useBreakpoint';
 import { useRequest } from '../../hooks/useRequest';
 import { easeOutExpo } from '../../motion/easing';
 import { getProductBySlug } from '../../services/products';
+import { measureRect, useFly } from '../../motion/FlyLayer';
+import { useAuth } from '../../state/auth';
+import { useRequireAuth } from '../../state/authPrompt';
+import { useCart } from '../../state/cart';
 import { useFavorites } from '../../state/favorites';
 import type { QuickViewProduct } from '../../state/quickView';
 import { fonts, radius, spacing } from '../../theme/tokens';
@@ -192,7 +196,13 @@ function Details({
   const styles = useStyles();
   const router = useRouter();
   const favorites = useFavorites();
+  const cart = useCart();
+  const fly = useFly();
+  const { user } = useAuth();
+  const requireAuth = useRequireAuth();
+  const addRef = useRef<View>(null);
   const [size, setSize] = useState<string | null>(null);
+  const [sizeError, setSizeError] = useState<string | null>(null);
 
   // Se o card trouxe dados resumidos (ex.: favoritos), busca o produto completo.
   const needsFetch = initial.sizes === undefined || initial.description === undefined;
@@ -210,6 +220,44 @@ function Details({
   const goToProduct = () => {
     onClose();
     router.push(`/produto/${product.slug}`);
+  };
+
+  // Visitante: fecha o popup e mostra o convite de cadastro (comprar/curtir exige conta).
+  const askToSignUp = (reason: 'buy' | 'like') => {
+    onClose();
+    setTimeout(() => requireAuth(reason, () => {}), 280);
+  };
+
+  const addToCart = async () => {
+    if (!user) return askToSignUp('buy');
+    const sizes = product.sizes ?? [];
+    if (sizes.length > 0 && !size) {
+      setSizeError('Escolha um tamanho.');
+      return;
+    }
+    const from = await measureRect(addRef.current);
+    const unitPrice =
+      product.promotionalPrice && product.promotionalPrice < product.price
+        ? product.promotionalPrice
+        : product.price;
+    cart.add({
+      productId: product.id,
+      slug: product.slug,
+      name: product.name,
+      image: product.images[0],
+      unitPrice,
+      size,
+      quantity: 1,
+      maxQuantity: Math.max(1, Math.min(10, product.stock ?? 1)),
+    });
+    onClose();
+    // Add to Cart Animation: a foto voa até a sacola depois que o popup fecha.
+    setTimeout(() => fly('cart', from, { kind: 'image', uri: product.images[0] }), 280);
+  };
+
+  const toggleFavorite = () => {
+    if (!user) return askToSignUp('like');
+    favorites.toggle(product);
   };
 
   return (
@@ -262,7 +310,10 @@ function Details({
             {product.sizes.map((s) => (
               <Pressable
                 key={s}
-                onPress={() => setSize(s)}
+                onPress={() => {
+                  setSize(s);
+                  setSizeError(null);
+                }}
                 accessibilityRole="radio"
                 accessibilityState={{ checked: s === size }}
                 style={[styles.size, s === size && styles.sizeActive]}
@@ -301,27 +352,34 @@ function Details({
         </View>
       ) : null}
 
+      {sizeError ? (
+        <UText variant="small" color={colors.danger}>
+          {sizeError}
+        </UText>
+      ) : null}
+
       <View style={styles.actions}>
-        <Button label="Ver detalhes do produto" onPress={goToProduct} arrow fullWidth />
-        <Pressable
-          onPress={() =>
-            favorites.toggle({
-              id: product.id,
-              slug: product.slug,
-              name: product.name,
-              images: product.images,
-              price: product.price,
-              promotionalPrice: product.promotionalPrice,
-              category: product.category,
-            })
-          }
-          accessibilityRole="button"
-          accessibilityState={{ selected: fav }}
-          style={styles.favButton}
-        >
-          <Heart size={18} color={colors.gold} fill={fav ? colors.gold : 'transparent'} strokeWidth={1.7} />
-          <UText variant="label">{fav ? 'Nos favoritos' : 'Favoritar'}</UText>
-        </Pressable>
+        <View ref={addRef} collapsable={false}>
+          <Button
+            label={soldOut ? 'Esgotado' : 'Adicionar à sacola'}
+            onPress={addToCart}
+            variant="gold"
+            fullWidth
+            disabled={soldOut}
+          />
+        </View>
+        <View style={styles.secondaryRow}>
+          <Pressable
+            onPress={toggleFavorite}
+            accessibilityRole="button"
+            accessibilityState={{ selected: fav }}
+            style={styles.favButton}
+          >
+            <Heart size={18} color={colors.gold} fill={fav ? colors.gold : 'transparent'} strokeWidth={1.7} />
+            <UText variant="label">{fav ? 'Nos favoritos' : 'Curtir'}</UText>
+          </Pressable>
+          <Button label="Ver detalhes" onPress={goToProduct} variant="ghost" arrow />
+        </View>
       </View>
     </ScrollView>
   );
@@ -408,6 +466,7 @@ const useStyles = makeStyles((colors) => ({
   loadingLines: { gap: 8, marginTop: spacing.sm },
   loadingLine: { height: 10, borderRadius: 5, backgroundColor: colors.surfaceRaised },
   actions: { marginTop: spacing.md, gap: spacing.xs },
+  secondaryRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   favButton: {
     flexDirection: 'row',
     alignItems: 'center',

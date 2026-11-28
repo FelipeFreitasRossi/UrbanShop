@@ -6,6 +6,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Container } from '../../components/layout/Container';
 import { Screen } from '../../components/layout/Screen';
 import { Section } from '../../components/layout/Section';
+import { Button } from '../../components/ui/Button';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { UText } from '../../components/ui/UText';
 import { getCategory } from '../../config/navigation';
@@ -14,7 +15,9 @@ import { useRequest } from '../../hooks/useRequest';
 import { Reveal } from '../../motion/Reveal';
 import { ApiError, friendlyError } from '../../services/api';
 import { getProductBySlug } from '../../services/products';
+import { useRequireAuth } from '../../state/authPrompt';
 import { useFavorites } from '../../state/favorites';
+import { useQuickAdd } from '../../state/quickAdd';
 import { fonts, radius, spacing } from '../../theme/tokens';
 import { discountPercent, formatPrice } from '../../utils/format';
 import { makeStyles, useColors } from '../../theme/ThemeProvider';
@@ -30,6 +33,8 @@ export default function ProductPage() {
   const request = useRequest(() => getProductBySlug(String(slug)), [slug]);
   const { isDesktop } = useBreakpoint();
   const favorites = useFavorites();
+  const requireAuth = useRequireAuth();
+  const quickAdd = useQuickAdd();
   const [size, setSize] = useState<string | null>(null);
   const [imageIndex, setImageIndex] = useState(0);
 
@@ -165,9 +170,20 @@ export default function ProductPage() {
                 </Reveal>
               ) : null}
 
+              <Reveal delay={230}>
+                <Button
+                  label={product.stock > 0 ? 'Adicionar à sacola' : 'Esgotado'}
+                  variant="gold"
+                  size="lg"
+                  fullWidth
+                  disabled={product.stock <= 0}
+                  onPress={() => quickAdd(product)}
+                />
+              </Reveal>
+
               <Reveal delay={260}>
                 <Pressable
-                  onPress={() => favorites.toggle(product)}
+                  onPress={() => requireAuth('like', () => favorites.toggle(product))}
                   accessibilityRole="button"
                   accessibilityState={{ selected: fav }}
                   style={styles.favorite}
